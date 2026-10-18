@@ -1,6 +1,7 @@
 import {snapshot,probabilities} from './engine.js';
 const $=id=>document.getElementById(id);
 let matches,match,minute=58.25,playing=false,last=0,view='overview';
+const clubCrests={MC:'manchester-city',AR:'arsenal',LI:'liverpool',CH:'chelsea',BA:'barcelona',RM:'real-madrid'};
 const svgNS='http://www.w3.org/2000/svg';
 function svg(tag,attrs){const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);return el;}
 function text(id,value){$(id).textContent=value;}
@@ -30,7 +31,7 @@ function render(){
  for(const e of rows){const row=document.createElement('tr');for(const [idx,value] of [`${Math.floor(e.minute)}′`,e.outcome==='goal'?'Goal':e.type==='shot'?'Shot':'Pass',match[e.team],e.player,e.outcome,e.xg?e.xg.toFixed(2):'—'].entries()){const td=document.createElement('td');if(idx===1){const span=document.createElement('span');span.className='event-type';span.textContent=value;td.append(span);}else td.textContent=value;row.append(td);}$('events').append(row);}
  if(!rows.length){const row=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent='No events yet. Play the replay or move the timeline.';row.append(td);$('events').append(row);}
 }
-function selectMatch(){match=matches.find(m=>m.id===$('match').value);for(const team of ['home','away']){text(team+'-name',match[team]);text(team+'-crest',match[team+'_code']);text('legend-'+team,match[team]);}text('shot-detail','Select a shot to inspect its quality and outcome.');render();}
+function selectMatch(){match=matches.find(m=>m.id===$('match').value);for(const team of ['home','away']){text(team+'-name',match[team]);const crest=$(team+'-crest');crest.src=`assets/crests/${clubCrests[match[team+'_code']]}.svg`;crest.alt=match[team]+' crest';text('legend-'+team,match[team]);}text('shot-detail','Select a shot to inspect its quality and outcome.');render();}
 function setPlaying(value){playing=value;text('play',value?'Ⅱ':'▶');$('play').setAttribute('aria-label',value?'Pause replay':'Play replay');}
 function frame(now){if(playing&&last){minute=Math.min(90,minute+(now-last)/1000*Number($('speed').value)/3);render();if(minute>=90)setPlaying(false);}last=now;requestAnimationFrame(frame);}
 $('play').onclick=()=>{if(minute>=90)minute=0;setPlaying(!playing);render();};$('reset').onclick=()=>{minute=0;setPlaying(false);render();};$('timeline').oninput=e=>{minute=Number(e.target.value);text('shot-detail','Select a shot to inspect its quality and outcome.');render();};$('match').onchange=()=>{minute=0;setPlaying(false);selectMatch();};$('shot-filter').onchange=render;$('event-filter').onchange=render;
