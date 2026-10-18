@@ -1,1 +1,11 @@
-{"name":"jogo-bonito","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"python3 server.py","test":"python3 -m unittest discover -s tests -v && node tests/engine.test.mjs"}}
+{
+  "name": "jogo-bonito",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 server.py",
+    "test": "python3 -m unittest discover -s tests -v && node tests/engine.test.mjs && node tests/simulator.test.mjs",
+    "data:refresh": "python3 scripts/download_sources.py && python3 scripts/build_catalog.py"
+  }
+}
