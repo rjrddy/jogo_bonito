@@ -19,7 +19,7 @@ flowchart LR
 
 Each club edition is the entire league season ending in the displayed year, not a calendar-year average. National editions reflect the specified tournament only. Team goals for/against per match are shrunk toward their competition average using an eight-match prior, then normalized into attack and defensive conceding factors. This is an interpretable heuristic baseline with explicit coverage and sample-size information.
 
-`simulator.js` combines independent edition strengths and venue settings into expected goals. The seeded PRNG, Poisson shot count, shot xG and goal draws produce a deterministic hypothetical event timeline. Shots and passes use anonymous units because historical rosters are absent. `engine.js` reconstructs every visible statistic from the selected timeline prefix. Outcome probabilities use the actual simulated score and remaining time with fixed pre-match rates. Changing a seed restarts at minute zero; seeking never generates new random numbers.
+`simulator.js` combines independent edition strengths and venue settings into expected goals. The seeded PRNG, Poisson shot count, shot xG and goal draws produce a deterministic hypothetical event timeline. Historical FootballSquads snapshot files are lazy-loaded per edition. Each side independently stores a valid playing XI. A separate seeded attribution stream assigns shots and passes to selected players using position weights, preserving the numerical event timeline and baseline goal rates. Missing sourced rosters retain anonymous units. Recorded source coaches are displayed without claiming complete managerial tenure histories. `engine.js` reconstructs every visible statistic from the selected timeline prefix. Outcome probabilities use the actual simulated score and remaining time with fixed pre-match rates. Changing a seed restarts at minute zero; seeking never generates new random numbers.
 
 Cross-competition comparisons assume equal normalized competition strength. The model is not a fitted player-level model or validated forecast. International source scores may include extra time. There is no extra-time or penalty-shootout simulation. The Methodology view exposes these limits and partial source coverage.
 
@@ -27,4 +27,9 @@ The static site needs no runtime backend or API key. URL parameters preserve sce
 
 ## Next steps
 
-Add historical squad provenance and lineup selection; fit opponent- and competition-adjusted attack/defense ratings; evaluate held-out chronological fixtures and calibration; connect durable simulation sessions to the API; then add PostgreSQL, Redis consumers and WebSocket delivery with process-failure tests. Publish measured benchmarks only after reproducible load testing.
+Extend dated transfer eligibility and complete managerial tenures; fit opponent- and competition-adjusted attack/defense ratings; evaluate held-out chronological fixtures and calibration; connect durable simulation sessions to the API; then add PostgreSQL, Redis consumers and WebSocket delivery with process-failure tests. Publish measured benchmarks only after reproducible load testing.
+
+
+Squad data is a separate non-commercial-attribution dataset, not part of the CC0 result sources. The importer caches pages, constrains concurrency, uses exact audited team aliases within competition/year, records source hashes and gaps, and packages one JSON file per edition plus a lightweight manifest. Suggested XIs use positions and source order; no player ability or coach tactical effect is claimed. Both original and selected departed-player statuses remain explicit.
+
+Light/dark mode is CSS-native via `prefers-color-scheme`; semantic SVG colours reference CSS variables so live system changes do not require regenerating charts or resetting replay state.

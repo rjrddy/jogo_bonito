@@ -1,11 +1,12 @@
 {
   "name": "jogo-bonito",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "python3 server.py",
-    "test": "python3 -m unittest discover -s tests -v && node tests/engine.test.mjs && node tests/simulator.test.mjs",
-    "data:refresh": "python3 scripts/download_sources.py && python3 scripts/build_catalog.py"
+    "test": "python3 -m unittest discover -s tests -v && node tests/engine.test.mjs && node tests/simulator.test.mjs && node tests/squads.test.mjs",
+    "data:refresh": "python3 scripts/download_sources.py && python3 scripts/build_catalog.py",
+    "data:rosters": "python3 scripts/import_rosters.py && python3 scripts/package_rosters.py"
   }
 }

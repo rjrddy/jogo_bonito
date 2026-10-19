@@ -1,5 +1,6 @@
+import {assignPlayer,lineupError} from './squads.js';
 // Historical team-edition baseline. All generated events are hypothetical.
-export const MODEL_VERSION='historical-v1';
+export const MODEL_VERSION='historical-v2';
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
 export function randomGenerator(seed){
  let state=Number(seed)>>>0;
@@ -13,8 +14,9 @@ export function expectedGoals(home,away,venue='neutral'){
  return {home:clamp(base*home.attack*away.defense*(venue==='home'?1.12:1),.15,4.5),away:clamp(base*away.attack*home.defense*(venue==='home'?.92:1),.15,4.5)};
 }
 function poisson(lambda,random){let p=1,k=0,limit=Math.exp(-lambda);do{k++;p*=random();}while(p>limit);return k-1;}
-export function simulate(home,away,{seed=202316,venue='neutral'}={}){
+export function simulate(home,away,{seed=202316,venue='neutral',lineups={}}={}){
  if(!Number.isInteger(Number(seed))||Number(seed)<0||Number(seed)>4294967295)throw new Error('Seed must be an integer from 0 to 4294967295');
+ for(const side of ['home','away']){if(lineups[side]?.length){const error=lineupError(lineups[side]);if(error)throw new Error(side+': '+error);}}
  const rates=expectedGoals(home,away,venue),random=randomGenerator(seed);
  const id=`sim-${home.id}-${away.id}-${venue}-${Number(seed)}`;
  const events=[];
@@ -34,8 +36,9 @@ export function simulate(home,away,{seed=202316,venue='neutral'}={}){
   events.push({minute:Math.round((.05+random()*89.9)*1000)/1000,team,type:'pass',player:'Team build-up',x:5+random()*90,y:5+random()*90,xg:0,outcome:random()<.86?'complete':'incomplete'});
  }
  events.sort((a,b)=>a.minute-b.minute);
+ for(const [i,team] of ['home','away'].entries()){if(lineups[team]?.length)assignPlayer(events.filter(e=>e.team===team),lineups[team],randomGenerator((Number(seed)^(i?0xABCD1234:0x1234ABCD))>>>0));}
  events.forEach((e,i)=>{e.id=`${id}-${i}`;e.match_id=id;e.x=+e.x.toFixed(3);e.y=+e.y.toFixed(3);e.xg=+e.xg.toFixed(4);});
- return {id,home:home.name,away:away.name,home_edition:home,away_edition:away,rates,seed:Number(seed),venue,model:MODEL_VERSION,events};
+ return {id,home:home.name,away:away.name,home_edition:home,away_edition:away,rates,seed:Number(seed),venue,model:MODEL_VERSION,lineups,events};
 }
 export function outcomeDistribution(rates){
  const mass=lambda=>{const p=[Math.exp(-lambda)];for(let i=1;i<40;i++)p.push(p[i-1]*lambda/i);return p;};

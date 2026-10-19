@@ -45,7 +45,7 @@ Neutral venue factors are 1.0; home advantage uses 1.12 for home and 0.92 for aw
 
 A seeded generator samples shot counts, shot quality, outcomes, pass events and event times. The generated goal rate matches the declared expected-goal rate in Monte Carlo tests. Match outcome estimates sum independent Poisson distributions for remaining goals, conditioned on score and time. The engine ends at 90 minutes: no extra time or shootouts. International input scores can include extra time, so tournament-derived rates are approximations.
 
-**These are hypothetical matches, not historical replays or calibrated forecasts.** No historical player rosters, lineups, injuries, formations or tactical styles are included. Anonymous event units avoid attributing invented events to real players. Possession remains a completed-pass-share proxy. Momentum reflects generated attacking events.
+**These are hypothetical matches, not historical replays or calibrated forecasts.** Historical squads and recorded coaches are available in the builder. Suggested XIs are based on listed positions and source order, not verified historical starters. Actions are attributed to selected players with positional heuristic weights; their abilities and coaches do not alter the team-level outcome model. Injuries and tactical styles are not modeled. Possession remains a completed-pass-share proxy. Momentum reflects generated attacking events.
 
 The original six club crests are bundled locally. Other team editions use readable initials when a crest asset is not available; no incorrect badge is substituted.
 
@@ -67,6 +67,35 @@ python3 scripts/build_catalog.py --as-of YYYY-MM-DD
 ```
 
 Raw downloads live in ignored `.local/sources/`. The default builder cutoff stays fixed for reproducibility; explicitly update it when refreshing. Source hashes detect changed upstream snapshots. Refreshing data or changing model code can change outputs; preserve the catalog and model version when comparing experiments.
+
+## Historical squads and coaches
+
+The bundled archive covers **all 2,002 supported team editions**, with **75,844 player-edition records** and **2,002 recorded coach snapshots**. These are repeated historical player records, not 75,844 unique people.
+
+Expand **Squad & coach** under either team to browse the source roster, search players, inspect positions and squad numbers, and select an XI. A suggested XI aims for 4-3-3 where positions allow. Exactly 11 players with one goalkeeper are required. Players marked as departed in the source remain visible in the season archive and cannot enter the snapshot XI. Squad lists can include academy and reserve players: they are source snapshots, not official registration certificates or dated match eligibility lists.
+
+Coaches are shown as **recorded in the source snapshot**. A season with multiple managers is not reduced to a claim that the displayed coach managed every match; complete managerial tenure histories are not included.
+
+Squad pages are bundled in separate edition files and loaded only when selected. Player selections are independent on both sides, included in scenario URLs and CSV exports, and produce reproducible attribution. A separate random stream assigns actions, preserving the existing numeric team-strength simulation. Goalkeepers are excluded from shot attribution.
+
+The squad source is [FootballSquads](https://www.footballsquads.co.uk/), whose [terms](https://www.footballsquads.co.uk/tou.htm) allow non-commercial use with attribution. **These roster data are not CC0 and are not licensed for commercial reuse by this project.** The required attribution appears in the application and every roster retains its source URL and SHA-256 snapshot hash.
+
+> Source of Material is http://www.footballsquads.com. Material: © FootballSquads.com, 1999 - , All Rights Reserved
+
+Refresh squad data (network required; cached pages are reused):
+
+```sh
+npm run data:rosters
+# Parse cached pages without network:
+python3 scripts/import_rosters.py --offline
+python3 scripts/package_rosters.py
+```
+
+The import records missing editions, name mapping gaps and download errors in `.local/rosters/import-report.json`. Names are joined through explicit audited aliases within the same competition and year; fuzzy matches are not silently accepted. `dist/rosters/index.json` exposes actual coverage counts and missing editions. Empty or unverified squads are not invented.
+
+## System light and dark mode
+
+The site follows `prefers-color-scheme`, including changes while the page is open. CSS and SVG chart colours use shared theme variables, and the browser chrome uses matching theme-colour metadata. There is no saved override to conflict with your device preference. The pitch and broadcast scoreboard retain their football colours in both themes.
 
 ## Verify
 
@@ -94,4 +123,4 @@ This unauthenticated API binds only to loopback and is intended for local develo
 
 ## Remaining platform work
 
-Historical rosters/player models; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
+Individual player/coach models; full transfer dates and manager tenures; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
