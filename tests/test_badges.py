@@ -33,3 +33,22 @@ class BadgeTests(unittest.TestCase):
         self.assertIn('2009',evian['source'])
 
 if __name__=='__main__':unittest.main()
+
+class NationalFlagTests(unittest.TestCase):
+    def test_all_national_editions_have_verified_local_flags(self):
+        from scripts.build_flags import flag_path
+        catalog=json.loads((ROOT/'dist/catalog.json').read_text())
+        manifest=json.loads((ROOT/'dist/assets/flags/index.json').read_text())
+        editions=[t for t in catalog['teams'] if t['kind']=='national']
+        self.assertEqual(set(manifest['teams']),{t['name'] for t in editions})
+        for t in editions:
+            record=manifest['teams'][t['name']]
+            self.assertEqual(t['crest'],flag_path(t['name']))
+            self.assertEqual(t['crest'],record['path'])
+            body=(ROOT/'dist'/t['crest']).read_bytes()
+            validate_asset(body,'.svg')
+            self.assertEqual(hashlib.sha256(body).hexdigest(),record['sha256'])
+        self.assertEqual(manifest['teams']['England']['code'],'gb-eng')
+        self.assertEqual(manifest['teams']['Scotland']['code'],'gb-sct')
+        self.assertEqual(manifest['teams']['Wales']['code'],'gb-wls')
+        self.assertEqual(manifest['teams']['Northern Ireland']['code'],'gb-nir')

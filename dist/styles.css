@@ -38,3 +38,5 @@
 #player-ledger tr[data-team] td:nth-child(2){color:var(--team-text);font-weight:600}
 @media(prefers-color-scheme:dark){.matrix-cell{background:rgba(var(--team-rgb),calc(.08 + var(--heat)*.35))}}
 .prob-track{outline:1px solid #8886}#ph{color:var(--home-text)}#pa{color:var(--away-text)}
+/* Keep national flags rectangular, with a visible edge on either system theme. */
+img.national-flag{object-fit:contain;filter:drop-shadow(0 0 1px #888) drop-shadow(0 2px 2px #0003)}

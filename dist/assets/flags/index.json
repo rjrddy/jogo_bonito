@@ -1,0 +1,392 @@
+{
+  "version": 1,
+  "source": "https://github.com/lipis/flag-icons/tree/v7.2.3",
+  "license": "MIT",
+  "teams": {
+    "Albania": {
+      "code": "al",
+      "path": "assets/flags/al.svg",
+      "sha256": "57743b2da4222d0b192fa8d7de106c7f89514a87d952cffc613abe982fab3d76"
+    },
+    "Algeria": {
+      "code": "dz",
+      "path": "assets/flags/dz.svg",
+      "sha256": "9ea0cf93222ab7b5e7b77b9576afcad80dad1eff33827e8e58dbfbb42aeb8213"
+    },
+    "Argentina": {
+      "code": "ar",
+      "path": "assets/flags/ar.svg",
+      "sha256": "77870402916f45a3cbbf5fe2b666117475377872764b9747c5ab995c936e85c4"
+    },
+    "Australia": {
+      "code": "au",
+      "path": "assets/flags/au.svg",
+      "sha256": "cbb2206c5e59a25d79228306af973666a191e163f0ae337681f447977e6edb18"
+    },
+    "Austria": {
+      "code": "at",
+      "path": "assets/flags/at.svg",
+      "sha256": "c0e5cb3c1d59fd002afd6e2b0dd03787677ca3c9e7b2321f4af6d9e28256ebcd"
+    },
+    "Belgium": {
+      "code": "be",
+      "path": "assets/flags/be.svg",
+      "sha256": "d6aff6fa4c913404eafd53f91c0a9b240fcecaddc8f0ac2160d362e38469342c"
+    },
+    "Bolivia": {
+      "code": "bo",
+      "path": "assets/flags/bo.svg",
+      "sha256": "9936b5b0c32ad76fb857a6081c2f048a48fc830814c25303c4156812a63d959a"
+    },
+    "Bosnia and Herzegovina": {
+      "code": "ba",
+      "path": "assets/flags/ba.svg",
+      "sha256": "b321fe9b47c1cd741c61b330aee66cf00550622a6a9e740161a9f240a14e0787"
+    },
+    "Brazil": {
+      "code": "br",
+      "path": "assets/flags/br.svg",
+      "sha256": "45531de3e2b3e8a7f6db53f8021ba18482176600bd5cf66e547b3e7fc8aa99ea"
+    },
+    "Cameroon": {
+      "code": "cm",
+      "path": "assets/flags/cm.svg",
+      "sha256": "c9a327dc0e355739a9f2bc0a91e1293f8e08e13910e718bc63fda35a244acef5"
+    },
+    "Canada": {
+      "code": "ca",
+      "path": "assets/flags/ca.svg",
+      "sha256": "6f1837841200ae8d7255f76e35fcccbe9de4b08dc87fe0150e7df0b806327ce4"
+    },
+    "Cape Verde": {
+      "code": "cv",
+      "path": "assets/flags/cv.svg",
+      "sha256": "2fa67e0a2477306f0427877b78d2276c58c496ff50faf4b3d69252350821e138"
+    },
+    "Chile": {
+      "code": "cl",
+      "path": "assets/flags/cl.svg",
+      "sha256": "bcf0ccdf0999a1cd82061202988e1f6088c2070e3e76794d67cb375ef325ef76"
+    },
+    "Colombia": {
+      "code": "co",
+      "path": "assets/flags/co.svg",
+      "sha256": "6bab3c96c1657510c6e49354dd40203c69401bee54da497392ab9267334e5fd4"
+    },
+    "Costa Rica": {
+      "code": "cr",
+      "path": "assets/flags/cr.svg",
+      "sha256": "4775ef01d28b8a887cde3dbe2826466ed77c87aae4d00517c99d4977afdbdc20"
+    },
+    "Croatia": {
+      "code": "hr",
+      "path": "assets/flags/hr.svg",
+      "sha256": "969d4f47b6762b31faf9dccc409f6f3edfb19f50fb598d8db8024754cd3303c2"
+    },
+    "Cura\u00e7ao": {
+      "code": "cw",
+      "path": "assets/flags/cw.svg",
+      "sha256": "c845d0cad7f00344a2729257315afbf81c70c08bf0772211eb913a716b9aae7c"
+    },
+    "Czech Republic": {
+      "code": "cz",
+      "path": "assets/flags/cz.svg",
+      "sha256": "d601fcc2e5b1fd48b79d53c55108af4c0e90793f146db51f3ee449d8d69512bc"
+    },
+    "DR Congo": {
+      "code": "cd",
+      "path": "assets/flags/cd.svg",
+      "sha256": "ad93c1afd68e6a7364d141e0989a798e81a202fe4674f21fece3ceea83fd167c"
+    },
+    "Denmark": {
+      "code": "dk",
+      "path": "assets/flags/dk.svg",
+      "sha256": "d2847c0bd7a1fb97977ee51f2f618c5ebc5898dd66ef9804f187613c27bdca1a"
+    },
+    "Ecuador": {
+      "code": "ec",
+      "path": "assets/flags/ec.svg",
+      "sha256": "da347b6ccf641cc0f63e88eaafb2fff0ce12fc5d9e4c693e6de8a7682397a263"
+    },
+    "Egypt": {
+      "code": "eg",
+      "path": "assets/flags/eg.svg",
+      "sha256": "c5997f42129e5df98495c59310db752ede9c493dc31811af58016b86264a5053"
+    },
+    "England": {
+      "code": "gb-eng",
+      "path": "assets/flags/gb-eng.svg",
+      "sha256": "53797ba9e2dd9b18cd5344255f4e9ae9fad743ecb628fc9feb98abea4f48f90e"
+    },
+    "Finland": {
+      "code": "fi",
+      "path": "assets/flags/fi.svg",
+      "sha256": "012edd984cf1879463c2855b7df02dea2f7de7f7a66b244fb1e22b4227f7aa65"
+    },
+    "France": {
+      "code": "fr",
+      "path": "assets/flags/fr.svg",
+      "sha256": "8cdacc8d79bcf210cdca2777a2c0de1f9e5862526877bd3026c9d59ecdcd4578"
+    },
+    "Georgia": {
+      "code": "ge",
+      "path": "assets/flags/ge.svg",
+      "sha256": "3821d90a8bfbfd9d139193efddbf60f32912e33feac4e4eca827515ad1e9d176"
+    },
+    "Germany": {
+      "code": "de",
+      "path": "assets/flags/de.svg",
+      "sha256": "efd480af5a154a7651f29da23ee0d09dbc892410fb4041898ddf8face336c575"
+    },
+    "Ghana": {
+      "code": "gh",
+      "path": "assets/flags/gh.svg",
+      "sha256": "53c55ca455293bceecfe6a5d6b12dc0bb670734c50bfd95cb21dc4ef12197405"
+    },
+    "Greece": {
+      "code": "gr",
+      "path": "assets/flags/gr.svg",
+      "sha256": "a184070f7678b06777be8ac38cb05ba41829591a6dac9b64b2b72db66aec82f5"
+    },
+    "Haiti": {
+      "code": "ht",
+      "path": "assets/flags/ht.svg",
+      "sha256": "2d5cc3562973f12923f61024900736c9a4d54c89ec5c9dfc8e69c02d015d0e54"
+    },
+    "Honduras": {
+      "code": "hn",
+      "path": "assets/flags/hn.svg",
+      "sha256": "67130fa043e9d30dda7691e0d59567ff32db435a0d72e4e57309bd439fd79995"
+    },
+    "Hungary": {
+      "code": "hu",
+      "path": "assets/flags/hu.svg",
+      "sha256": "ffc4edd580d4b9789bee68f33cef24afe826ae571464350fe7b98c7a36b4ff8f"
+    },
+    "Iceland": {
+      "code": "is",
+      "path": "assets/flags/is.svg",
+      "sha256": "4ef2de6fb25ff5a16789e8ffc3b68894527e68c89dce3b4e1118f5bbcc0bb7ae"
+    },
+    "Iran": {
+      "code": "ir",
+      "path": "assets/flags/ir.svg",
+      "sha256": "cb363e09bafbff6de7c2fba6a002ca33f0563dc83a2328d34adb492cf80ca629"
+    },
+    "Iraq": {
+      "code": "iq",
+      "path": "assets/flags/iq.svg",
+      "sha256": "b6c0c264bbcbd38332e6db13bf5e2ba497b97852b386f5f288011e460ae3f04d"
+    },
+    "Italy": {
+      "code": "it",
+      "path": "assets/flags/it.svg",
+      "sha256": "9fa88118818d9b64838f578e2babcca3d0630aed21b5c33b34aff7ac5ce506bc"
+    },
+    "Ivory Coast": {
+      "code": "ci",
+      "path": "assets/flags/ci.svg",
+      "sha256": "4ecfea70e4e0860fdb49a523db7cd64431b4da8130ee9038cf87bfcc85c3806e"
+    },
+    "Jamaica": {
+      "code": "jm",
+      "path": "assets/flags/jm.svg",
+      "sha256": "f837df1ac21a4c64be2c977e2faeb6d6593624703d7c61b71a857fa8355b7f47"
+    },
+    "Japan": {
+      "code": "jp",
+      "path": "assets/flags/jp.svg",
+      "sha256": "bfea80baf9989383dc4bf7ca594ed95be0df0ff125bfc88d0bfa878eb0198022"
+    },
+    "Jordan": {
+      "code": "jo",
+      "path": "assets/flags/jo.svg",
+      "sha256": "e3a570d5c50c15f4aca73d27b2543ee335fd04151847e3d8ef2b42e5ac1ebe12"
+    },
+    "Mexico": {
+      "code": "mx",
+      "path": "assets/flags/mx.svg",
+      "sha256": "0a06e057cc7fe804a1814b643cae8819a46c5f27762629d2bce276644b0cd948"
+    },
+    "Morocco": {
+      "code": "ma",
+      "path": "assets/flags/ma.svg",
+      "sha256": "28cfcdecf9675b0a14fbfae176324aea03711edab1a13592cfb7d58e6772b25c"
+    },
+    "Netherlands": {
+      "code": "nl",
+      "path": "assets/flags/nl.svg",
+      "sha256": "8f691f17fe70894537af8e92f2ca47761d353639b0defc15cbe561eb503ab010"
+    },
+    "New Zealand": {
+      "code": "nz",
+      "path": "assets/flags/nz.svg",
+      "sha256": "794a2c8c09796090ab748a74bc35aed825e701eaddc46b138f300401ac9a25cd"
+    },
+    "Nigeria": {
+      "code": "ng",
+      "path": "assets/flags/ng.svg",
+      "sha256": "b7a2a45a6499095efce41592428ff558ec5bd83d2751858dfe5fa4589334b66f"
+    },
+    "North Korea": {
+      "code": "kp",
+      "path": "assets/flags/kp.svg",
+      "sha256": "c0815d9c8c05391055ce6bd1a0d07674bca8f6f261a50e4e2c5d762b6ceac2fe"
+    },
+    "North Macedonia": {
+      "code": "mk",
+      "path": "assets/flags/mk.svg",
+      "sha256": "22488dc890fe1e5f7a8bea423dfe2e74f8ccf04402e75090cdeca030b12ca010"
+    },
+    "Northern Ireland": {
+      "code": "gb-nir",
+      "path": "assets/flags/gb-nir.svg",
+      "sha256": "a34747d6437283ee220c3d11f8270f830e251e68b87fc6ec81aaafec25ce1a91"
+    },
+    "Norway": {
+      "code": "no",
+      "path": "assets/flags/no.svg",
+      "sha256": "ceea17af051dceefd5759a824213eb40ac8a8095aa88a6874a7bbc8de637357a"
+    },
+    "Panama": {
+      "code": "pa",
+      "path": "assets/flags/pa.svg",
+      "sha256": "6181586e499d3bafb6190e0304904662dc31fc878ec8efcfab879455c15e83c4"
+    },
+    "Paraguay": {
+      "code": "py",
+      "path": "assets/flags/py.svg",
+      "sha256": "20b8e69838dc9b7ba50d90d402a0ed886f19fac550e6bd8c486a987512633905"
+    },
+    "Peru": {
+      "code": "pe",
+      "path": "assets/flags/pe.svg",
+      "sha256": "e9dd299d453d9c173203e60f69623ef2148dbee24b2a1763328e94d4dfece05f"
+    },
+    "Poland": {
+      "code": "pl",
+      "path": "assets/flags/pl.svg",
+      "sha256": "369bb3e14ee718df1ee15fd2fb3ad0dae713f78f622e277710fb2b30a313f2aa"
+    },
+    "Portugal": {
+      "code": "pt",
+      "path": "assets/flags/pt.svg",
+      "sha256": "552399764beecea60b61acb72ebe596670e983459a09951b4ea0a6239074f3a0"
+    },
+    "Qatar": {
+      "code": "qa",
+      "path": "assets/flags/qa.svg",
+      "sha256": "fb955ef352ff3ba1ea980090c31d5cf15257729d32949d04b18402651e93b986"
+    },
+    "Republic of Ireland": {
+      "code": "ie",
+      "path": "assets/flags/ie.svg",
+      "sha256": "f82568d70bd1624ff7ce3ced8712a718a224ff2424fd2ade2da4339be3bba463"
+    },
+    "Romania": {
+      "code": "ro",
+      "path": "assets/flags/ro.svg",
+      "sha256": "17a3a747fc5e63302aaa670a667e5812f3676f46768e5a3e87b254bd41762840"
+    },
+    "Russia": {
+      "code": "ru",
+      "path": "assets/flags/ru.svg",
+      "sha256": "7100aaae51ff3b6a2bf0ca932b3bc518bdc760814725e7cca31d821a26c3dd7c"
+    },
+    "Saudi Arabia": {
+      "code": "sa",
+      "path": "assets/flags/sa.svg",
+      "sha256": "07dd281423e6786772693f95fab5046ff43427e6a7d692eb0122250f2536a751"
+    },
+    "Scotland": {
+      "code": "gb-sct",
+      "path": "assets/flags/gb-sct.svg",
+      "sha256": "7b55bce70824742222ccd804a4bc3d0e0f0f9416d103d05a46dd60825ce559f7"
+    },
+    "Senegal": {
+      "code": "sn",
+      "path": "assets/flags/sn.svg",
+      "sha256": "6437db13c13fa5cc1b121e6b59739902c6583be6db361260873ce2664f666478"
+    },
+    "Serbia": {
+      "code": "rs",
+      "path": "assets/flags/rs.svg",
+      "sha256": "840a9b00eef36036b7e2fe807d9c6eb6ddc94f77b0b64ac5b962fbde050c3688"
+    },
+    "Slovakia": {
+      "code": "sk",
+      "path": "assets/flags/sk.svg",
+      "sha256": "e82f6617359300b35d610e89e207a4e8e007e932fc0fb3e79f4ca402a712a748"
+    },
+    "Slovenia": {
+      "code": "si",
+      "path": "assets/flags/si.svg",
+      "sha256": "c73e4b63645d376b92f5533fcd0aa90835fae941e4661f5c0fd277b5e29198a3"
+    },
+    "South Africa": {
+      "code": "za",
+      "path": "assets/flags/za.svg",
+      "sha256": "1755a5e16f1c9f5120e4871e8454bdee663beb4fb4827012bcd02cb9044249c2"
+    },
+    "South Korea": {
+      "code": "kr",
+      "path": "assets/flags/kr.svg",
+      "sha256": "7a6cd5b51d0e2841ed8b79b1147ad8a66cf3c09f6344d4a63b5e4413ffa5d15b"
+    },
+    "Spain": {
+      "code": "es",
+      "path": "assets/flags/es.svg",
+      "sha256": "28172513456aaf0bad0ff97b3d64657d53cd264c4f9474619d4e6f5a31cbf954"
+    },
+    "Sweden": {
+      "code": "se",
+      "path": "assets/flags/se.svg",
+      "sha256": "b3b5071e6c1d4a0e3db828bab5c7dfd68d0e90fcf3b25b15e9a2c4f96c1f79c9"
+    },
+    "Switzerland": {
+      "code": "ch",
+      "path": "assets/flags/ch.svg",
+      "sha256": "ac676cd39d7032988598ef2dd73f6bebcd767738e3e469705d6a437835ac485c"
+    },
+    "Tunisia": {
+      "code": "tn",
+      "path": "assets/flags/tn.svg",
+      "sha256": "8e0274e5762a4d5f783e64f1206dd69008454f750de21d3ba61439d0af3c577c"
+    },
+    "Turkey": {
+      "code": "tr",
+      "path": "assets/flags/tr.svg",
+      "sha256": "256a1d6afbedb9f731566982331a1cd1ad14aba211b8a61d338855879505e74f"
+    },
+    "Ukraine": {
+      "code": "ua",
+      "path": "assets/flags/ua.svg",
+      "sha256": "2d869c23ebfefb2ae0a633297c11dee06fcb666ce7b3ca75eba09b7a1a3a03ac"
+    },
+    "United States": {
+      "code": "us",
+      "path": "assets/flags/us.svg",
+      "sha256": "e7be4240cf57987926673708f09233be1ab6bdf35acc7b86bd32a263f197a2a7"
+    },
+    "Uruguay": {
+      "code": "uy",
+      "path": "assets/flags/uy.svg",
+      "sha256": "47656c0bf4961a1f7233841eb78756cd45d074e7d4061b8a1217bba7754a30fe"
+    },
+    "Uzbekistan": {
+      "code": "uz",
+      "path": "assets/flags/uz.svg",
+      "sha256": "62ce6f1073416e8d3d599639ec8b105f4de167c0730f036e47c650e686c4ff5d"
+    },
+    "Venezuela": {
+      "code": "ve",
+      "path": "assets/flags/ve.svg",
+      "sha256": "5712f1c63ba0bfa25a853c100cdebfd6698cce98fc2e0ba8d3fab35df541efa1"
+    },
+    "Wales": {
+      "code": "gb-wls",
+      "path": "assets/flags/gb-wls.svg",
+      "sha256": "3a95845d4ebbfaeae77d3cb9ca2d9c7a33067293104c1d382475b6df096c9d67"
+    }
+  }
+}

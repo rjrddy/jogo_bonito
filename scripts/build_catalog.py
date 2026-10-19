@@ -13,6 +13,11 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
+try:
+    from .build_flags import flag_path
+except ImportError:
+    from build_flags import flag_path
+
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / '.local/sources'
 LEAGUES = {'en': ('Premier League', 'eng'), 'es': ('La Liga', 'es'), 'de': ('Bundesliga', 'de'), 'it': ('Serie A', 'it'), 'fr': ('Ligue 1', 'fr')}
@@ -50,7 +55,7 @@ def edition(competition, label, year, season, rows, expected=None):
     for name, s in sorted(stats.items()):
         attack = (s['gf'] + prior * mean) / (s['played'] + prior) / mean
         defense = (s['ga'] + prior * mean) / (s['played'] + prior) / mean
-        result.append(dict(id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season, competition=competition, competition_name=label, kind='club' if competition in LEAGUES else 'national', attack=round(attack, 5), defense=round(defense, 5), **s, crest=BADGES.get(name) or (f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None), last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
+        result.append(dict(id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season, competition=competition, competition_name=label, kind='club' if competition in LEAGUES else 'national', attack=round(attack, 5), defense=round(defense, 5), **s, crest=flag_path(name) if competition not in LEAGUES else BADGES.get(name) or (f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None), last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
     coverage = dict(competition=competition, label=label, year=year, season=season, teams=len(stats), matches=len(rows), expected_matches=expected, complete=len(rows)==expected if expected else None, last_match=max(r['date'] for r in rows))
     return result, coverage
 
