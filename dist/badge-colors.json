@@ -1,0 +1,1786 @@
+{
+  "version": 1,
+  "method": "Dominant chromatic pixel clusters sampled from bundled club crests, with reviewed club-primary overrides in team-colors.js.",
+  "palettes": {
+    "assets/crests/en-arsenal.svg": {
+      "name": "Arsenal",
+      "colors": [
+        "#9b834b",
+        "#cf1843",
+        "#263778",
+        "#b7a67e",
+        "#ded5c2"
+      ]
+    },
+    "assets/crests/en-astonvilla.svg": {
+      "name": "Aston Villa",
+      "colors": [
+        "#93bde4",
+        "#fee407",
+        "#480125",
+        "#60395d",
+        "#797ca2"
+      ]
+    },
+    "assets/crests/en-birminghamcity.svg": {
+      "name": "Birmingham City",
+      "colors": [
+        "#1e3d8f",
+        "#bdc6de",
+        "#8797c3",
+        "#546caa"
+      ]
+    },
+    "assets/crests/en-blackburnrovers.svg": {
+      "name": "Blackburn Rovers",
+      "colors": [
+        "#009edf",
+        "#feec01",
+        "#009036",
+        "#e1001a",
+        "#c6b801"
+      ]
+    },
+    "assets/crests/en-boltonwanderers.svg": {
+      "name": "Bolton Wanderers",
+      "colors": [
+        "#263c7e",
+        "#de0024",
+        "#88111e",
+        "#e4415b",
+        "#f6bcc5"
+      ]
+    },
+    "assets/crests/en-burnley.svg": {
+      "name": "Burnley",
+      "colors": [
+        "#5f0041",
+        "#ad7d9e",
+        "#8a4574",
+        "#d2b8ca"
+      ]
+    },
+    "assets/crests/en-chelsea.svg": {
+      "name": "Chelsea",
+      "colors": [
+        "#083282",
+        "#e26419",
+        "#9e9fbc",
+        "#7e4c47",
+        "#405f9c"
+      ]
+    },
+    "assets/crests/en-everton.svg": {
+      "name": "Everton",
+      "colors": [
+        "#01019e",
+        "#bdbde6",
+        "#8c8cd3",
+        "#3a3ab4"
+      ]
+    },
+    "assets/crests/en-fulham.svg": {
+      "name": "Fulham",
+      "colors": [
+        "#ca0000",
+        "#5e0000"
+      ]
+    },
+    "assets/crests/en-hullcity.svg": {
+      "name": "Hull City",
+      "colors": [
+        "#f18a01",
+        "#603e16",
+        "#9f5813",
+        "#bea584",
+        "#f7ead7"
+      ]
+    },
+    "assets/crests/en-liverpool.svg": {
+      "name": "Liverpool",
+      "colors": [
+        "#01a398",
+        "#d00127",
+        "#bfe8e5",
+        "#42bab2",
+        "#db405d"
+      ]
+    },
+    "assets/crests/en-manchestercity.svg": {
+      "name": "Manchester City",
+      "colors": [
+        "#012f60",
+        "#7ab4dc",
+        "#e7ac02",
+        "#fac24e",
+        "#5e7b9a"
+      ]
+    },
+    "assets/crests/en-manchesterunited.svg": {
+      "name": "Manchester United",
+      "colors": [
+        "#d9030e",
+        "#fee200",
+        "#e76007",
+        "#f4a104",
+        "#685d00"
+      ]
+    },
+    "assets/crests/en-portsmouth.svg": {
+      "name": "Portsmouth",
+      "colors": [
+        "#293f9c",
+        "#bfc5e2",
+        "#7886c1"
+      ]
+    },
+    "assets/crests/en-stokecity.svg": {
+      "name": "Stoke City",
+      "colors": [
+        "#d6172e",
+        "#f5c755",
+        "#e05364",
+        "#f4bec4",
+        "#ea8a96"
+      ]
+    },
+    "assets/crests/en-sunderland.svg": {
+      "name": "Sunderland Afc",
+      "colors": [
+        "#ea172b",
+        "#a68826",
+        "#5a451f",
+        "#f05866",
+        "#e4dcbe"
+      ]
+    },
+    "assets/crests/en-tottenhamhotspur.svg": {
+      "name": "Tottenham Hotspur",
+      "colors": []
+    },
+    "assets/crests/en-westhamunited.svg": {
+      "name": "West Ham United",
+      "colors": [
+        "#7c2c3b",
+        "#2dafe5",
+        "#f8d742",
+        "#c19aa1",
+        "#5f5c79"
+      ]
+    },
+    "assets/crests/en-wiganathletic.svg": {
+      "name": "Wigan Athletic",
+      "colors": [
+        "#1d59af",
+        "#006737",
+        "#9e8a4f",
+        "#5b86c3",
+        "#a2bbde"
+      ]
+    },
+    "assets/crests/en-wolves.svg": {
+      "name": "Wolverhampton Wanderers",
+      "colors": [
+        "#fdb913",
+        "#fcedcb",
+        "#fdcc52",
+        "#80611a",
+        "#c79316"
+      ]
+    },
+    "assets/crests/es-athleticbilbao.svg": {
+      "name": "Athletic Bilbao",
+      "colors": [
+        "#ee2523",
+        "#f3605e",
+        "#f79d9c",
+        "#824141",
+        "#fcd7d7"
+      ]
+    },
+    "assets/crests/es-atleticomadrid.svg": {
+      "name": "Atlético Madrid",
+      "colors": [
+        "#282a6f",
+        "#e8161f",
+        "#5f6094",
+        "#f6a5a8",
+        "#016a3f"
+      ]
+    },
+    "assets/crests/es-barcelona.svg": {
+      "name": "Barcelona",
+      "colors": [
+        "#e6bf01",
+        "#cc0732",
+        "#002496",
+        "#892347",
+        "#a28600"
+      ]
+    },
+    "assets/crests/es-osasuna.svg": {
+      "name": "CA Osasuna",
+      "colors": [
+        "#ab842c",
+        "#cb2725",
+        "#2c1a69",
+        "#d8c69d",
+        "#d85d5b"
+      ]
+    },
+    "assets/crests/es-tenerife.svg": {
+      "name": "CD Tenerife",
+      "colors": [
+        "#2d3997",
+        "#d8a341",
+        "#1e86c7",
+        "#9f7f5c",
+        "#e32129"
+      ]
+    },
+    "assets/crests/es-deportivolacoruna.svg": {
+      "name": "Deportivo La Coruna",
+      "colors": [
+        "#57175e",
+        "#a38944",
+        "#e0d9c0",
+        "#c4b586",
+        "#d85532"
+      ]
+    },
+    "assets/crests/es-espanyol.svg": {
+      "name": "Espanyol Barcelona",
+      "colors": [
+        "#e01717",
+        "#0077bd",
+        "#f5d10d",
+        "#ec7e10",
+        "#f19d9e"
+      ]
+    },
+    "assets/crests/es-getafe.svg": {
+      "name": "Getafe CF",
+      "colors": [
+        "#015c9e",
+        "#59ac41",
+        "#ee3e33",
+        "#fff100",
+        "#f6941a"
+      ]
+    },
+    "assets/crests/es-malaga.svg": {
+      "name": "Malaga CF",
+      "colors": [
+        "#c39400",
+        "#00489a",
+        "#a7d6f5",
+        "#fff26b",
+        "#5685bb"
+      ]
+    },
+    "assets/crests/es-mallorca.svg": {
+      "name": "RCD Mallorca",
+      "colors": [
+        "#e2001a",
+        "#fee000",
+        "#bca500",
+        "#006335",
+        "#877700"
+      ]
+    },
+    "assets/crests/es-racingsantander.svg": {
+      "name": "Racing Santander",
+      "colors": [
+        "#2d9a29",
+        "#d9b334",
+        "#e33a20",
+        "#762009",
+        "#a08324"
+      ]
+    },
+    "assets/crests/es-realmadrid.svg": {
+      "name": "Real Madrid",
+      "colors": [
+        "#fbae18",
+        "#204482",
+        "#e33442",
+        "#a08242",
+        "#607aa7"
+      ]
+    },
+    "assets/crests/es-valladolid.svg": {
+      "name": "Real Valladolid",
+      "colors": [
+        "#285f3d",
+        "#eb1d29",
+        "#911c8f",
+        "#f4ea18",
+        "#847d1a"
+      ]
+    },
+    "assets/crests/es-zaragoza.svg": {
+      "name": "Real Zaragoza",
+      "colors": [
+        "#ff0010",
+        "#ffd700",
+        "#012971",
+        "#c0a100",
+        "#7c6700"
+      ]
+    },
+    "assets/crests/es-sevilla.svg": {
+      "name": "Sevilla",
+      "colors": [
+        "#d70f21",
+        "#c79101",
+        "#dfc180",
+        "#613d00",
+        "#f5c0c5"
+      ]
+    },
+    "assets/crests/es-sportinggijon.svg": {
+      "name": "Sporting Gijon",
+      "colors": [
+        "#e2001a",
+        "#e2b900",
+        "#ea4659",
+        "#e25f0c",
+        "#f07d8a"
+      ]
+    },
+    "assets/crests/es-almeria.svg": {
+      "name": "Ud Almeria",
+      "colors": [
+        "#ffcf00",
+        "#e30511",
+        "#0073bd",
+        "#c98600",
+        "#f17e84"
+      ]
+    },
+    "assets/crests/es-valencia.svg": {
+      "name": "Valencia CF",
+      "colors": [
+        "#ffe524",
+        "#e23c07",
+        "#3e93cd",
+        "#d69100",
+        "#80b8de"
+      ]
+    },
+    "assets/crests/es-villarreal.svg": {
+      "name": "Villarreal CF",
+      "colors": [
+        "#002d56",
+        "#ffd733",
+        "#ee0028",
+        "#f87c2d",
+        "#3f607f"
+      ]
+    },
+    "assets/crests/es-xerez.svg": {
+      "name": "Xerez Cd",
+      "colors": [
+        "#febd01",
+        "#0a7fb4",
+        "#db0318",
+        "#098066",
+        "#bedcea"
+      ]
+    },
+    "assets/crests/de-koln.svg": {
+      "name": "1 FC Koeln",
+      "colors": [
+        "#e20613",
+        "#f8c0c3",
+        "#e83b45",
+        "#f1838a",
+        "#7b3f42"
+      ]
+    },
+    "assets/crests/de-nurnberg.svg": {
+      "name": "1 FC Nuernberg",
+      "colors": [
+        "#aa1124",
+        "#e9c1c6",
+        "#be4958",
+        "#d2818b"
+      ]
+    },
+    "assets/crests/de-mainz.svg": {
+      "name": "1 Fsv Mainz 05",
+      "colors": [
+        "#ae0f0a",
+        "#d4807e",
+        "#eac1c0",
+        "#bf423e"
+      ]
+    },
+    "assets/crests/de-hoffenheim.svg": {
+      "name": "1899 Hoffenheim",
+      "colors": [
+        "#1a62b5",
+        "#9fbde0",
+        "#d6e3f2",
+        "#6495cd"
+      ]
+    },
+    "assets/crests/de-bayerleverkusen.svg": {
+      "name": "Bayer Leverkusen",
+      "colors": [
+        "#fe0000",
+        "#ffff00",
+        "#810101",
+        "#a1a100",
+        "#5e5e03"
+      ]
+    },
+    "assets/crests/de-bayernmunich.svg": {
+      "name": "Bayern Muenchen",
+      "colors": [
+        "#ed0038",
+        "#286cfd",
+        "#f6809b",
+        "#f13d67",
+        "#a5c2fe"
+      ]
+    },
+    "assets/crests/de-borussiamonchengladbach.svg": {
+      "name": "Bor Moenchengladbach",
+      "colors": []
+    },
+    "assets/crests/de-borussiadortmund.svg": {
+      "name": "Borussia Dortmund",
+      "colors": [
+        "#ffd900",
+        "#c0a300",
+        "#7b6900",
+        "#483d00"
+      ]
+    },
+    "assets/crests/de-eintrachtfrankfurt.svg": {
+      "name": "Eintracht Frankfurt",
+      "colors": [
+        "#e1020c",
+        "#f8bfc2",
+        "#eb5c62",
+        "#f28d92"
+      ]
+    },
+    "assets/crests/de-schalke04.svg": {
+      "name": "FC Schalke 04",
+      "colors": [
+        "#004b9c",
+        "#4078b4",
+        "#7aa1cb",
+        "#c6d6e9"
+      ]
+    },
+    "assets/crests/de-hamburger.svg": {
+      "name": "Hamburger SV",
+      "colors": [
+        "#1e5cb3",
+        "#c6d6ec",
+        "#5886c6"
+      ]
+    },
+    "assets/crests/de-hannover96.svg": {
+      "name": "Hannover 96",
+      "colors": [
+        "#009d3a",
+        "#a5dcb9",
+        "#3bb367"
+      ]
+    },
+    "assets/crests/de-herthaberlin.svg": {
+      "name": "Hertha BSC Berlin",
+      "colors": [
+        "#0068b4",
+        "#a0c6e3",
+        "#3a8ac5",
+        "#243948",
+        "#8197a7"
+      ]
+    },
+    "assets/crests/de-freiburg.svg": {
+      "name": "SC Freiburg",
+      "colors": []
+    },
+    "assets/crests/de-stuttgart.svg": {
+      "name": "Vfb Stuttgart",
+      "colors": [
+        "#d40723",
+        "#ffdc00",
+        "#f4bec5",
+        "#de4459",
+        "#ea8593"
+      ]
+    },
+    "assets/crests/de-bochum.svg": {
+      "name": "Vfl Bochum",
+      "colors": [
+        "#005ba4",
+        "#3f83ba",
+        "#c3d8e9",
+        "#75a6cd"
+      ]
+    },
+    "assets/crests/de-wolfsburg.svg": {
+      "name": "Vfl Wolfsburg",
+      "colors": [
+        "#41a639",
+        "#81c47c",
+        "#c2e2bf"
+      ]
+    },
+    "assets/crests/de-werderbremen.svg": {
+      "name": "Werder Bremen",
+      "colors": [
+        "#018149",
+        "#b8dccc",
+        "#80c0a4",
+        "#45a37a"
+      ]
+    },
+    "assets/crests/it-siena.svg": {
+      "name": "AC Siena",
+      "colors": [
+        "#face00",
+        "#c29f00",
+        "#7e6700",
+        "#817643",
+        "#fde680"
+      ]
+    },
+    "assets/crests/it-fiorentina.svg": {
+      "name": "Acf Fiorentina",
+      "colors": [
+        "#62368b",
+        "#dd3224",
+        "#cdbfda",
+        "#eb857d",
+        "#9b80b5"
+      ]
+    },
+    "assets/crests/it-bari.svg": {
+      "name": "As Bari",
+      "colors": [
+        "#ce282a",
+        "#da5e60",
+        "#e99e9f",
+        "#f6d6d6"
+      ]
+    },
+    "assets/crests/it-livorno.svg": {
+      "name": "As Livorno",
+      "colors": [
+        "#711d38",
+        "#f9b301",
+        "#aa7888",
+        "#c67b15",
+        "#c9a9b4"
+      ]
+    },
+    "assets/crests/it-roma.svg": {
+      "name": "As Roma",
+      "colors": [
+        "#fbba00",
+        "#980a2b",
+        "#c85e16"
+      ]
+    },
+    "assets/crests/it-atalanta.svg": {
+      "name": "Atalanta",
+      "colors": [
+        "#0d68b1",
+        "#bfd8eb"
+      ]
+    },
+    "assets/crests/it-bologna.svg": {
+      "name": "Bologna",
+      "colors": [
+        "#9f1f33",
+        "#293545",
+        "#684a59",
+        "#bc7683",
+        "#cdacb4"
+      ]
+    },
+    "assets/crests/it-cagliari.svg": {
+      "name": "Cagliari Calcio",
+      "colors": [
+        "#b01028",
+        "#082242",
+        "#c2485b",
+        "#d37a87",
+        "#8693a3"
+      ]
+    },
+    "assets/crests/it-catania.svg": {
+      "name": "Calcio Catania",
+      "colors": [
+        "#e30613",
+        "#009fe3",
+        "#ed626a",
+        "#60c2ed",
+        "#486d9f"
+      ]
+    },
+    "assets/crests/it-chievoverona.svg": {
+      "name": "Chievo Verona",
+      "colors": [
+        "#fef404",
+        "#0666fe",
+        "#4386c4",
+        "#a4bf63",
+        "#74a296"
+      ]
+    },
+    "assets/crests/it-genoa.svg": {
+      "name": "Genoa CFc",
+      "colors": [
+        "#ab131c",
+        "#002942",
+        "#ffd600",
+        "#b8a512",
+        "#eac3c6"
+      ]
+    },
+    "assets/crests/it-inter.svg": {
+      "name": "Inter",
+      "colors": [
+        "#00239c",
+        "#6277c2",
+        "#bdc6e5",
+        "#00114c",
+        "#324eaf"
+      ]
+    },
+    "assets/crests/it-juventus.svg": {
+      "name": "Juventus",
+      "colors": []
+    },
+    "assets/crests/it-lazio.svg": {
+      "name": "Lazio Roma",
+      "colors": [
+        "#d69a2d",
+        "#74d1ea",
+        "#f5e5c9",
+        "#e6c280",
+        "#7f9bb9"
+      ]
+    },
+    "assets/crests/it-milan.svg": {
+      "name": "Milan",
+      "colors": [
+        "#e4002b",
+        "#7b0b25"
+      ]
+    },
+    "assets/crests/it-parma.svg": {
+      "name": "Parma",
+      "colors": [
+        "#24338a",
+        "#ffcf01",
+        "#c6a624",
+        "#948244",
+        "#c7cbe1"
+      ]
+    },
+    "assets/crests/it-sampdoria.svg": {
+      "name": "Sampdoria",
+      "colors": [
+        "#004b95",
+        "#e2001a",
+        "#7fa4c9",
+        "#467cb2",
+        "#b6cce1"
+      ]
+    },
+    "assets/crests/it-napoli.svg": {
+      "name": "Ssc Napoli",
+      "colors": [
+        "#00abe7",
+        "#c1eaf9",
+        "#80d5f3"
+      ]
+    },
+    "assets/crests/it-palermo.svg": {
+      "name": "US Palermo",
+      "colors": [
+        "#c5ad3a",
+        "#eec0c8",
+        "#65572a",
+        "#9b825b"
+      ]
+    },
+    "assets/crests/it-udinese.svg": {
+      "name": "Udinese Calcio",
+      "colors": [
+        "#8b7d37"
+      ]
+    },
+    "assets/crests/fr-auxerre.svg": {
+      "name": "Aj Auxerre",
+      "colors": [
+        "#1c4f9c",
+        "#809dc7",
+        "#c7d4e7",
+        "#4d75b1"
+      ]
+    },
+    "assets/crests/fr-monaco.svg": {
+      "name": "As Monaco",
+      "colors": [
+        "#ff002e",
+        "#c1933f",
+        "#ff4062",
+        "#ffbcc8",
+        "#ff8298"
+      ]
+    },
+    "assets/crests/fr-nancy.svg": {
+      "name": "As Nancy",
+      "colors": [
+        "#e93526",
+        "#ed655a",
+        "#f5a39c",
+        "#fbdbd9"
+      ]
+    },
+    "assets/crests/fr-stetienne.svg": {
+      "name": "As Saint Etienne",
+      "colors": [
+        "#1d995b",
+        "#cdb88a",
+        "#7fc5a2",
+        "#c6e5d6",
+        "#5275aa"
+      ]
+    },
+    "assets/crests/fr-lorient.svg": {
+      "name": "FC Lorient",
+      "colors": [
+        "#e9670b",
+        "#4d2911",
+        "#9d480e",
+        "#a89488",
+        "#846856"
+      ]
+    },
+    "assets/crests/fr-sochaux.svg": {
+      "name": "FC Sochaux",
+      "colors": [
+        "#053c86",
+        "#ffd01b",
+        "#819ec3",
+        "#3e649d",
+        "#a19947"
+      ]
+    },
+    "assets/crests/fr-bordeaux.svg": {
+      "name": "Girondins Bordeaux",
+      "colors": [
+        "#3f425a"
+      ]
+    },
+    "assets/crests/fr-grenoble.svg": {
+      "name": "Grenoble Foot 38",
+      "colors": [
+        "#005da3",
+        "#c0d7e8",
+        "#3e84b9",
+        "#89b4d4"
+      ]
+    },
+    "assets/crests/fr-lemans.svg": {
+      "name": "Le Mans",
+      "colors": [
+        "#e20613",
+        "#f0c000",
+        "#e47f07",
+        "#f6d860",
+        "#c13e0d"
+      ]
+    },
+    "assets/crests/fr-lille.svg": {
+      "name": "Lille OSC",
+      "colors": [
+        "#24216a",
+        "#e01e14",
+        "#e8554d",
+        "#f3a49f",
+        "#a1a0bf"
+      ]
+    },
+    "assets/crests/fr-montpellier.svg": {
+      "name": "Montpellier HSC",
+      "colors": [
+        "#003e7e",
+        "#f37021",
+        "#7f9ebe",
+        "#3a699b",
+        "#b8c9db"
+      ]
+    },
+    "assets/crests/fr-nice.svg": {
+      "name": "OGC Nice",
+      "colors": [
+        "#b59a54",
+        "#ed1c24",
+        "#66593f",
+        "#481d20",
+        "#c2b8a1"
+      ]
+    },
+    "assets/crests/fr-lyon.svg": {
+      "name": "Olympique Lyon",
+      "colors": [
+        "#0f23aa",
+        "#e5202e",
+        "#c88c28",
+        "#f8c3c7",
+        "#8690d4"
+      ]
+    },
+    "assets/crests/fr-marseille.svg": {
+      "name": "Olympique Marseille",
+      "colors": [
+        "#0b61ad",
+        "#6199ca",
+        "#c4d9eb"
+      ]
+    },
+    "assets/crests/fr-parissaintgermain.svg": {
+      "name": "Paris Saint Germain",
+      "colors": [
+        "#004170",
+        "#e30613",
+        "#80a0b8",
+        "#477597",
+        "#b8cad7"
+      ]
+    },
+    "assets/crests/fr-lens.svg": {
+      "name": "RC Lens",
+      "colors": [
+        "#b71315",
+        "#ffc700",
+        "#817341",
+        "#ebc2c1",
+        "#c64547"
+      ]
+    },
+    "assets/crests/fr-rennes.svg": {
+      "name": "Stade Rennes",
+      "colors": [
+        "#e13327",
+        "#fcbc17",
+        "#e8675e",
+        "#f1a19b",
+        "#fadcda"
+      ]
+    },
+    "assets/crests/fr-toulouse.svg": {
+      "name": "Toulouse",
+      "colors": [
+        "#38284f",
+        "#685384",
+        "#de013c",
+        "#bb9678",
+        "#da5c58"
+      ]
+    },
+    "assets/crests/fr-boulogne.svg": {
+      "name": "US Boulogne",
+      "colors": [
+        "#cd131d",
+        "#f2c3c5",
+        "#e47e84",
+        "#d94c54"
+      ]
+    },
+    "assets/crests/fr-valenciennes.svg": {
+      "name": "Valenciennes",
+      "colors": [
+        "#e31b22",
+        "#f7bfc1",
+        "#a21b20",
+        "#e45c61",
+        "#886466"
+      ]
+    },
+    "assets/crests/en-blackpool.svg": {
+      "name": "Blackpool",
+      "colors": [
+        "#f68712",
+        "#ea9959",
+        "#c75c20",
+        "#658180",
+        "#5d3b1e"
+      ]
+    },
+    "assets/crests/en-newcastleunited.svg": {
+      "name": "Newcastle United",
+      "colors": [
+        "#03c7f8",
+        "#bfa464",
+        "#003c4b",
+        "#0184a5",
+        "#f00000"
+      ]
+    },
+    "assets/crests/en-westbrom.svg": {
+      "name": "West Bromwich Albion",
+      "colors": [
+        "#091453",
+        "#592d09",
+        "#018b4b",
+        "#3f4879",
+        "#9ca1ba"
+      ]
+    },
+    "assets/crests/es-hercules.svg": {
+      "name": "Hercules CF",
+      "colors": [
+        "#013893",
+        "#af923a",
+        "#447c3e",
+        "#6082bb",
+        "#bbc9e2"
+      ]
+    },
+    "assets/crests/es-levante.svg": {
+      "name": "Levante Ud",
+      "colors": [
+        "#b4053f",
+        "#005ca5",
+        "#fac400",
+        "#dba33e",
+        "#00355f"
+      ]
+    },
+    "assets/crests/es-realsociedad.svg": {
+      "name": "Real Sociedad",
+      "colors": [
+        "#143c89",
+        "#e5a514",
+        "#fee14a",
+        "#ea1d24",
+        "#64581d"
+      ]
+    },
+    "assets/crests/de-1kaiserslautern.svg": {
+      "name": "1. FC Kaiserslautern",
+      "colors": [
+        "#e30511",
+        "#ea4049",
+        "#f8bfc2",
+        "#f18087"
+      ]
+    },
+    "assets/crests/de-stpauli.svg": {
+      "name": "FC St. Pauli",
+      "colors": [
+        "#e30613",
+        "#624839",
+        "#f8c0c4",
+        "#e93f49",
+        "#f17f86"
+      ]
+    },
+    "assets/crests/it-cesena.svg": {
+      "name": "Ac Cesena",
+      "colors": []
+    },
+    "assets/crests/it-brescia.svg": {
+      "name": "Brescia Calcio",
+      "colors": [
+        "#005dac",
+        "#cdab34",
+        "#3f85c0",
+        "#9fc2e0",
+        "#e7d69c"
+      ]
+    },
+    "assets/crests/it-lecce.svg": {
+      "name": "US Lecce",
+      "colors": [
+        "#263b63",
+        "#d5b978",
+        "#84243b",
+        "#968c70",
+        "#c6bc1a"
+      ]
+    },
+    "assets/crests/fr-arlesavignon.png": {
+      "name": "Ac Arles Avignon",
+      "colors": [
+        "#2c5492",
+        "#ecba1c",
+        "#418bd1",
+        "#8099c3",
+        "#bac8e1"
+      ]
+    },
+    "assets/crests/fr-caen.svg": {
+      "name": "SM Caen",
+      "colors": [
+        "#24355e",
+        "#c9a664",
+        "#ec1d26",
+        "#7a849d",
+        "#cc5763"
+      ]
+    },
+    "assets/crests/fr-brest.svg": {
+      "name": "Stade Brest",
+      "colors": [
+        "#ec1c24",
+        "#9e1d22",
+        "#f57f83",
+        "#fabcbe",
+        "#491e20"
+      ]
+    },
+    "assets/crests/en-norwichcity.svg": {
+      "name": "Norwich City",
+      "colors": [
+        "#038c40",
+        "#fff200",
+        "#7fbe20",
+        "#bcd711",
+        "#3ea431"
+      ]
+    },
+    "assets/crests/en-qpr.svg": {
+      "name": "Queens Park Rangers",
+      "colors": [
+        "#1e5ca5",
+        "#a1bad9",
+        "#5a87bd",
+        "#d3dfed"
+      ]
+    },
+    "assets/crests/en-swanseacity.svg": {
+      "name": "Swansea City",
+      "colors": []
+    },
+    "assets/crests/es-granada.svg": {
+      "name": "Granada CF",
+      "colors": [
+        "#c31733",
+        "#d4576b",
+        "#e18a98",
+        "#f5d7dc"
+      ]
+    },
+    "assets/crests/es-rayovallecano.svg": {
+      "name": "Rayo Vallecano",
+      "colors": [
+        "#c0ae33",
+        "#e3361d",
+        "#e2d9a0",
+        "#5f5644",
+        "#a4d5b9"
+      ]
+    },
+    "assets/crests/es-betis.svg": {
+      "name": "Real Betis",
+      "colors": [
+        "#de9500",
+        "#00954c",
+        "#d7023e",
+        "#7ecaa4",
+        "#3dae77"
+      ]
+    },
+    "assets/crests/de-augsburg.svg": {
+      "name": "FC Augsburg",
+      "colors": [
+        "#ba3833",
+        "#ffd42e",
+        "#db8230",
+        "#46714d",
+        "#dd9d9b"
+      ]
+    },
+    "assets/crests/it-novara.svg": {
+      "name": "Novara Calcio",
+      "colors": [
+        "#00547e",
+        "#b91821",
+        "#c0ac7b",
+        "#7ea9bf",
+        "#40809a"
+      ]
+    },
+    "assets/crests/fr-ajaccio.svg": {
+      "name": "AC Ajaccio",
+      "colors": [
+        "#ec1c24",
+        "#f0555b",
+        "#fabfc1",
+        "#f68e92",
+        "#9d1e23"
+      ]
+    },
+    "assets/crests/fr-dijon.svg": {
+      "name": "Dijon FCO",
+      "colors": [
+        "#d40028",
+        "#df405e",
+        "#f4bdc8",
+        "#ea8497"
+      ]
+    },
+    "assets/crests/fr-evianthonongaillard.svg": {
+      "name": "Evian Thonon Gaillard",
+      "colors": [
+        "#917847",
+        "#d60025",
+        "#c7baa2",
+        "#b23e36"
+      ]
+    },
+    "assets/crests/en-reading.svg": {
+      "name": "Reading",
+      "colors": [
+        "#dc1b3e",
+        "#004494",
+        "#dd9300",
+        "#a1bad7",
+        "#9d6800"
+      ]
+    },
+    "assets/crests/en-southampton.svg": {
+      "name": "Southampton",
+      "colors": [
+        "#ec1a3b",
+        "#22b24c",
+        "#fcc00e",
+        "#806417",
+        "#473b1b"
+      ]
+    },
+    "assets/crests/es-celtavigo.svg": {
+      "name": "RC Celta",
+      "colors": [
+        "#d50032",
+        "#6dace5",
+        "#bcd9f3",
+        "#e9e0c1",
+        "#b19323"
+      ]
+    },
+    "assets/crests/de-fortunadusseldorf.svg": {
+      "name": "Fortuna Düsseldorf",
+      "colors": [
+        "#e30511",
+        "#f8bfc2",
+        "#ed5c64",
+        "#f28c91"
+      ]
+    },
+    "assets/crests/de-spvgggreutherfurth.svg": {
+      "name": "SpVgg Greuther Fürth",
+      "colors": [
+        "#2fa641",
+        "#bde3c3",
+        "#7ac685"
+      ]
+    },
+    "assets/crests/it-pescara.svg": {
+      "name": "Pescara Calcio",
+      "colors": [
+        "#013765",
+        "#0972ce",
+        "#3e678a",
+        "#829db3",
+        "#bbc9d6"
+      ]
+    },
+    "assets/crests/it-torino.svg": {
+      "name": "Torino",
+      "colors": [
+        "#8b2a1f",
+        "#ebaa00",
+        "#dec1bf",
+        "#687092",
+        "#a96059"
+      ]
+    },
+    "assets/crests/fr-troyes.svg": {
+      "name": "Estac Troyes",
+      "colors": [
+        "#015da3",
+        "#c19903",
+        "#a0b7c8",
+        "#41769f",
+        "#dfc784"
+      ]
+    },
+    "assets/crests/fr-bastia.svg": {
+      "name": "SC Bastia",
+      "colors": [
+        "#0053db",
+        "#dbe6fa",
+        "#3e7ce3",
+        "#a1bff2",
+        "#003b9e"
+      ]
+    },
+    "assets/crests/fr-reims.svg": {
+      "name": "Stade Reims",
+      "colors": [
+        "#eb0000"
+      ]
+    },
+    "assets/crests/en-cardiffcity.svg": {
+      "name": "Cardiff City",
+      "colors": [
+        "#2b58ae",
+        "#5f81c2",
+        "#b9c8e4",
+        "#b31e28",
+        "#dd9ea2"
+      ]
+    },
+    "assets/crests/en-crystalpalace.svg": {
+      "name": "Crystal Palace",
+      "colors": [
+        "#0155a5",
+        "#3f7fbb",
+        "#a0bfdd",
+        "#ee2e24",
+        "#f9c0bd"
+      ]
+    },
+    "assets/crests/es-elche.svg": {
+      "name": "Elche CF",
+      "colors": [
+        "#e6c777",
+        "#c5112e",
+        "#b89b45",
+        "#1b458f",
+        "#d25448"
+      ]
+    },
+    "assets/crests/de-eintrachtbraunschweig.svg": {
+      "name": "Eintracht Braunschweig",
+      "colors": [
+        "#fddf17",
+        "#165da3",
+        "#e31d25",
+        "#9fc1df",
+        "#6097c9"
+      ]
+    },
+    "assets/crests/it-verona.svg": {
+      "name": "Hellas Verona",
+      "colors": [
+        "#ffd100"
+      ]
+    },
+    "assets/crests/it-sassuolo.svg": {
+      "name": "Sassuolo Calcio",
+      "colors": [
+        "#1ea451",
+        "#0f5228"
+      ]
+    },
+    "assets/crests/fr-guingamp.svg": {
+      "name": "EA Guingamp",
+      "colors": [
+        "#e30613",
+        "#ea424c",
+        "#f8c2c5",
+        "#f17f85",
+        "#5e0207"
+      ]
+    },
+    "assets/crests/fr-nantes.svg": {
+      "name": "FC Nantes",
+      "colors": [
+        "#ffdc00",
+        "#01a558",
+        "#44b340",
+        "#81c12b"
+      ]
+    },
+    "assets/crests/en-leicestercity.svg": {
+      "name": "Leicester City",
+      "colors": [
+        "#0154a0",
+        "#fdbe11",
+        "#9fbedb",
+        "#3f7db7",
+        "#7f8858"
+      ]
+    },
+    "assets/crests/es-cordoba.svg": {
+      "name": "Córdoba CF",
+      "colors": [
+        "#016139",
+        "#dfac13",
+        "#ae1c2d",
+        "#7cad99",
+        "#c6621f"
+      ]
+    },
+    "assets/crests/es-eibar.svg": {
+      "name": "SD Eibar",
+      "colors": [
+        "#0170b8",
+        "#02306b",
+        "#e19700",
+        "#85073a",
+        "#4395ca"
+      ]
+    },
+    "assets/crests/de-paderborn.svg": {
+      "name": "SC Paderborn 07",
+      "colors": [
+        "#005ca8",
+        "#c1d7ea",
+        "#6099c9"
+      ]
+    },
+    "assets/crests/it-empoli.svg": {
+      "name": "Empoli",
+      "colors": [
+        "#28589d",
+        "#5187cb",
+        "#1b3963",
+        "#98a8bc",
+        "#677586"
+      ]
+    },
+    "assets/crests/fr-metz.svg": {
+      "name": "FC Metz",
+      "colors": [
+        "#731013"
+      ]
+    },
+    "assets/crests/en-bournemouth.svg": {
+      "name": "AFC Bournemouth",
+      "colors": [
+        "#c51217",
+        "#5e070a",
+        "#615843",
+        "#a6976d",
+        "#dbc5a3"
+      ]
+    },
+    "assets/crests/en-watford.svg": {
+      "name": "Watford",
+      "colors": [
+        "#ec2127",
+        "#fbee23",
+        "#9f161a",
+        "#827b12",
+        "#c3b91b"
+      ]
+    },
+    "assets/crests/es-laspalmas.svg": {
+      "name": "UD Las Palmas",
+      "colors": [
+        "#004b9d",
+        "#fee300",
+        "#bba700",
+        "#6b0c0c",
+        "#877901"
+      ]
+    },
+    "assets/crests/de-ingolstadt04.svg": {
+      "name": "FC Ingolstadt 04",
+      "colors": [
+        "#de0014",
+        "#96000d",
+        "#f7bfc4",
+        "#e53b4a",
+        "#ee7c86"
+      ]
+    },
+    "assets/crests/de-darmstadt.svg": {
+      "name": "SV Darmstadt 98",
+      "colors": [
+        "#004f9f",
+        "#a0bddb",
+        "#417bb7",
+        "#d7e3f0"
+      ]
+    },
+    "assets/crests/it-carpi.svg": {
+      "name": "Carpi",
+      "colors": [
+        "#cf132e",
+        "#f1b8c0",
+        "#de5a6c",
+        "#840b1c"
+      ]
+    },
+    "assets/crests/it-frosinone.svg": {
+      "name": "Frosinone Calcio",
+      "colors": [
+        "#004393",
+        "#ffdd00",
+        "#c8d6ec",
+        "#c2b824",
+        "#3f6366"
+      ]
+    },
+    "assets/crests/fr-angers.svg": {
+      "name": "Angers SCO",
+      "colors": [
+        "#bf9667",
+        "#e0c29e",
+        "#faede1"
+      ]
+    },
+    "assets/crests/fr-gazelecajaccio.svg": {
+      "name": "Gazélec FC Ajaccio",
+      "colors": [
+        "#d13211",
+        "#005b9d",
+        "#023568",
+        "#f6c311",
+        "#e27d11"
+      ]
+    },
+    "assets/crests/en-middlesbrough.svg": {
+      "name": "Middlesbrough",
+      "colors": [
+        "#c8102e",
+        "#d4435b",
+        "#e899a6",
+        "#f6d8dc"
+      ]
+    },
+    "assets/crests/es-alaves.svg": {
+      "name": "CD Alavés",
+      "colors": [
+        "#0232a0",
+        "#5e7cc2",
+        "#bbc8e5"
+      ]
+    },
+    "assets/crests/es-leganes.svg": {
+      "name": "CD Leganés",
+      "colors": [
+        "#ce9701",
+        "#277d22",
+        "#0b1f6d",
+        "#eddaa0",
+        "#debd60"
+      ]
+    },
+    "assets/crests/de-rbleipzig.svg": {
+      "name": "RB Leipzig",
+      "colors": [
+        "#dd0741",
+        "#011f47",
+        "#96a3b3",
+        "#415876",
+        "#e85c82"
+      ]
+    },
+    "assets/crests/it-crotone.svg": {
+      "name": "FC Crotone",
+      "colors": [
+        "#003355",
+        "#bb0000",
+        "#3e647e",
+        "#7f98a9",
+        "#cc4040"
+      ]
+    },
+    "assets/crests/en-brightonhovealbion.svg": {
+      "name": "Brighton & Hove Albion",
+      "colors": [
+        "#005daa",
+        "#c3d9eb",
+        "#3f85bf",
+        "#7cabd3",
+        "#fdbb1b"
+      ]
+    },
+    "assets/crests/en-huddersfieldtown.svg": {
+      "name": "Huddersfield Town",
+      "colors": [
+        "#025da0",
+        "#f8d918",
+        "#9ea1bf",
+        "#6178a5",
+        "#c6d5e9"
+      ]
+    },
+    "assets/crests/es-girona.svg": {
+      "name": "Girona",
+      "colors": [
+        "#cf0c29",
+        "#ffb700",
+        "#f1bac2",
+        "#d94459",
+        "#e47786"
+      ]
+    },
+    "assets/crests/it-benevento.svg": {
+      "name": "Benevento Calcio",
+      "colors": [
+        "#e70133",
+        "#f3e800",
+        "#ea4a22",
+        "#7e031d",
+        "#ee9013"
+      ]
+    },
+    "assets/crests/it-spal.svg": {
+      "name": "SPAL 2013 Ferrara",
+      "colors": [
+        "#00a3dd",
+        "#c7ad77",
+        "#e7d9c0",
+        "#63a8aa",
+        "#897a62"
+      ]
+    },
+    "assets/crests/fr-amiens.svg": {
+      "name": "Amiens SC",
+      "colors": []
+    },
+    "assets/crests/fr-strasbourg.svg": {
+      "name": "RC Strasbourg",
+      "colors": [
+        "#009fe3",
+        "#dc2f34",
+        "#004996",
+        "#3fb6ea",
+        "#bee7f8"
+      ]
+    },
+    "assets/crests/es-huesca.svg": {
+      "name": "SD Huesca",
+      "colors": [
+        "#283380",
+        "#cf122d",
+        "#feec00",
+        "#742359",
+        "#9da2c5"
+      ]
+    },
+    "assets/crests/fr-nimes.svg": {
+      "name": "Nîmes Olympique",
+      "colors": [
+        "#e40613"
+      ]
+    },
+    "assets/crests/en-sheffieldunited.svg": {
+      "name": "Sheffield United",
+      "colors": [
+        "#ec2227",
+        "#f79fa1",
+        "#f15e61",
+        "#fcd9da",
+        "#fbed23"
+      ]
+    },
+    "assets/crests/de-1unionberlin.svg": {
+      "name": "1. FC Union Berlin",
+      "colors": [
+        "#e30613",
+        "#ffdd00",
+        "#e93e40",
+        "#ffee7f",
+        "#f7a538"
+      ]
+    },
+    "assets/crests/en-leedsunited.svg": {
+      "name": "Leeds United",
+      "colors": [
+        "#ffde1b",
+        "#0060a8",
+        "#7f9f61",
+        "#418083",
+        "#c1bf3d"
+      ]
+    },
+    "assets/crests/es-cadiz.svg": {
+      "name": "Cádiz CF",
+      "colors": [
+        "#fde607",
+        "#0045a5",
+        "#c3a707",
+        "#483e02",
+        "#00275d"
+      ]
+    },
+    "assets/crests/de-arminiabielefeld.svg": {
+      "name": "Arminia Bielefeld",
+      "colors": [
+        "#015d9d",
+        "#c2d8e8",
+        "#4084b5",
+        "#7baacc",
+        "#3d5664"
+      ]
+    },
+    "assets/crests/it-spezia.svg": {
+      "name": "Spezia Calcio",
+      "colors": []
+    },
+    "assets/crests/en-brentford.svg": {
+      "name": "Brentford",
+      "colors": [
+        "#e30613",
+        "#f8bfc2",
+        "#e93a45",
+        "#fbb800",
+        "#f18187"
+      ]
+    },
+    "assets/crests/it-salernitana.svg": {
+      "name": "US Salernitana 1919",
+      "colors": [
+        "#671912",
+        "#c59a00",
+        "#a97d79",
+        "#9d6307",
+        "#82433d"
+      ]
+    },
+    "assets/crests/it-venezia.svg": {
+      "name": "Venezia",
+      "colors": [
+        "#a08c55",
+        "#006937",
+        "#ff6b00",
+        "#51472b",
+        "#823600"
+      ]
+    },
+    "assets/crests/fr-clermont.svg": {
+      "name": "Clermont Foot 63",
+      "colors": [
+        "#1f3561",
+        "#c41343",
+        "#596586",
+        "#9ba5b8",
+        "#752351"
+      ]
+    },
+    "assets/crests/en-nottinghamforest.svg": {
+      "name": "Nottingham Forest",
+      "colors": [
+        "#dd0000"
+      ]
+    },
+    "assets/crests/it-monza.svg": {
+      "name": "AC Monza",
+      "colors": [
+        "#ed173a",
+        "#f68799",
+        "#fabec8",
+        "#f1516b"
+      ]
+    },
+    "assets/crests/it-cremonese.svg": {
+      "name": "US Cremonese",
+      "colors": [
+        "#cf9c51",
+        "#ed1c24",
+        "#0a4a9b",
+        "#a45f64",
+        "#f5dfd1"
+      ]
+    },
+    "assets/crests/en-lutontown.svg": {
+      "name": "Luton Town",
+      "colors": [
+        "#002d60",
+        "#f28c00",
+        "#fedc60",
+        "#b29c7c",
+        "#a36505"
+      ]
+    },
+    "assets/crests/de-heidenheim.svg": {
+      "name": "1. FC Heidenheim 1846",
+      "colors": [
+        "#003b79",
+        "#e2001a",
+        "#5a7a9d",
+        "#bac9da",
+        "#f8bfc5"
+      ]
+    },
+    "assets/crests/fr-lehavre.svg": {
+      "name": "Le Havre AC",
+      "colors": [
+        "#1d2947",
+        "#89c2eb",
+        "#c59b66",
+        "#7d6855",
+        "#d5e9f6"
+      ]
+    },
+    "assets/crests/en-ipswichtown.svg": {
+      "name": "Ipswich Town",
+      "colors": [
+        "#3b64a3",
+        "#de2c37",
+        "#e86d74",
+        "#becce1",
+        "#7e99c2"
+      ]
+    },
+    "assets/crests/de-holsteinkiel.svg": {
+      "name": "Holstein Kiel",
+      "colors": [
+        "#01579c",
+        "#eb1b39",
+        "#9fc0da",
+        "#4181b5",
+        "#d3e2ee"
+      ]
+    },
+    "assets/crests/it-como.svg": {
+      "name": "Como 1907",
+      "colors": [
+        "#10416a",
+        "#a7b9c8",
+        "#4b708e"
+      ]
+    },
+    "assets/crests/es-oviedo.svg": {
+      "name": "Real Oviedo",
+      "colors": [
+        "#ffd200",
+        "#094ca1",
+        "#e23727",
+        "#ffe25b",
+        "#5b87c0"
+      ]
+    },
+    "assets/crests/it-pisa.svg": {
+      "name": "AC Pisa 1909",
+      "colors": [
+        "#0760ac",
+        "#e30613",
+        "#043763",
+        "#41586b",
+        "#e93a45"
+      ]
+    },
+    "assets/crests/fr-paris.svg": {
+      "name": "Paris",
+      "colors": [
+        "#077dbb",
+        "#0d1d46",
+        "#3e435c",
+        "#075686",
+        "#bb3839"
+      ]
+    }
+  }
+}
