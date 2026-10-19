@@ -18,13 +18,13 @@ export function createSquadController(manifest,onChange){
   if(!data){$(side+'-squad-summary').textContent='Squad not available';root.append(element('p','squad-note','No sourced roster for this edition. Events use anonymous team units.'));return;}
   if(!selection.has(key(side,edition))){
    const explicit=initial.get(side)===edition.id?initial.get(side+'_xi'):null;
-   selection.set(key(side,edition),explicit!==null?explicit.split(',').filter(Boolean):suggestedXI(data.players).map(p=>p.id));
+   selection.set(key(side,edition),explicit!==null?explicit.split(',').filter(Boolean):suggestedXI(data.players,$(side+'-formation')?.value||'4-3-3').map(p=>p.id));
   }
   $(side+'-squad-summary').textContent=`Squad & coach / ${data.players.length} players`;
   const coach=element('p','squad-coach');coach.append(element('strong','', 'COACH RECORDED IN SOURCE'),document.createTextNode(data.coaches.map(c=>c.name).join(' / ')||'Not recorded in source'));root.append(coach);
   root.append(element('p','squad-note','Suggested XI uses positions, not historical starting frequency. Select 11 players including one goalkeeper. Player names affect event attribution; player and coach ratings are not modeled.'));
   const controls=element('div','squad-lineup-controls'),count=element('span','squad-lineup-count');count.setAttribute('aria-live','polite');
-  const auto=element('button','', 'Reset suggested XI');auto.type='button';auto.onclick=()=>{selection.set(key(side,edition),suggestedXI(data.players).map(p=>p.id));render(side,edition,data);onChange();};controls.append(count,auto);root.append(controls);
+  const auto=element('button','', 'Reset suggested XI');auto.type='button';auto.onclick=()=>{selection.set(key(side,edition),suggestedXI(data.players,$(side+'-formation')?.value||'4-3-3').map(p=>p.id));render(side,edition,data);onChange();};controls.append(count,auto);root.append(controls);
   const search=element('label','squad-search','Search squad');const input=document.createElement('input');input.type='search';input.placeholder='Player name or position';search.append(input);root.append(search);
   const list=element('div','squad-list'),checks=[];root.append(list);
   function paint(){const ids=selection.get(key(side,edition)),err=lineupError(players(edition,side));count.textContent=`${ids.length}/11 selected${err?' · '+err:''}`;count.classList.toggle('squad-status-error',Boolean(err));for(const {box,player} of checks){box.checked=ids.includes(player.id);box.disabled=player.status==='departed'||(!box.checked&&ids.length>=11);}}
@@ -37,5 +37,7 @@ export function createSquadController(manifest,onChange){
   try{const data=await load(edition);if(shown[side]!==edition.id)return;render(side,edition,data);onChange();}catch(e){if(shown[side]!==edition.id)return;$(side+'-squad-summary').textContent='Squad load failed';$(side+'-squad').replaceChildren(element('p','squad-note',e.message));onChange();}
  }
  async function configuration(side,edition){const data=await load(edition);if(data&&!selection.has(key(side,edition)))render(side,edition,data);const err=error(edition,side);if(err)throw new Error(edition.name+': '+err);return players(edition,side);}
- return {show,error,configuration,coaches:edition=>cache.get(edition.id)?.coaches||[]};
+ async function setSelection(side,edition,ids){const data=await load(edition);if(!data)return;const valid=new Set(data.players.map(p=>p.id));selection.set(key(side,edition),ids.filter(id=>valid.has(id)));render(side,edition,data);onChange();}
+ async function resetFormation(side,edition){const data=await load(edition);if(!data)return;await setSelection(side,edition,suggestedXI(data.players,$(side+'-formation').value).map(p=>p.id));}
+ return {show,error,configuration,setSelection,resetFormation,selectionIds:(side,edition)=>selection.get(key(side,edition))||[],coaches:edition=>cache.get(edition.id)?.coaches||[]};
 }

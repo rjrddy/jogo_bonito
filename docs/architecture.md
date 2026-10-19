@@ -33,3 +33,12 @@ Extend dated transfer eligibility and complete managerial tenures; fit opponent-
 Squad data is a separate non-commercial-attribution dataset, not part of the CC0 result sources. The importer caches pages, constrains concurrency, uses exact audited team aliases within competition/year, records source hashes and gaps, and packages one JSON file per edition plus a lightweight manifest. Suggested XIs use positions and source order; no player ability or coach tactical effect is claimed. Both original and selected departed-player statuses remain explicit.
 
 Light/dark mode is CSS-native via `prefers-color-scheme`; semantic SVG colours reference CSS variables so live system changes do not require regenerating charts or resetting replay state.
+
+
+## Match Lab expansion (model historical-v3)
+
+`lab-engine.js` contains pure score-matrix, seeded score-batch, historical-comparison and player-ledger reducers. `lab.js` owns the dedicated workspaces, formation diagrams, result notebook and downloads. The app keeps one canonical current simulation; uncommitted configuration edits are marked separately. XIs, formations, tactics, venue and seed are serialized into share links. A generation token prevents stale asynchronous squad loading from replacing a newer requested simulation.
+
+Approaches apply documented attack/exposure multipliers before rate bounds, independently for each side. Balanced mode preserves the previous scoring baseline. Formation changes choose an available positional XI and affect layout; there are no learned formation or coach effects. Batch runs sample independent Poisson scorelines rather than thousands of event streams, so 10,000 experiments are practical without blocking on millions of DOM updates. Exact probability grids aggregate all 6+ scores, preserving probability mass.
+
+The report reducer uses only the current replay prefix. Player totals agree with event counts, and highlight/event controls seek rather than generate new events. Playback rendering is capped to roughly eight updates per second. Saved configurations and completed results are bounded browser-local storage collections; failures are surfaced and no backend persistence or identity is implied.

@@ -1,4 +1,4 @@
-# Jogo Bonito
+# Jogo Bonito · The Match Lab
 
 A historical football matchup simulator. Play **2023 Manchester City vs 2016 Real Madrid**, **2012 Spain vs 2022 Argentina**, or any pair of supported team editions, including club-versus-country experiments.
 
@@ -13,9 +13,24 @@ python3 server.py
 
 The simulator also runs on static hosting: serve `dist/` over HTTP. Its catalog and match engine are bundled, with no third-party data requests at runtime. Google Fonts is optional; local font fallbacks are defined.
 
-## Choose your matchup
+## The Match Lab
 
-Each side has independent competition, edition, team, and search controls. Select neutral ground or home advantage, enter a seed, and click **Simulate match**. Use replay/pause, restart, seek, speed controls or **Skip to full time**. **New seed** reruns the matchup with a fresh possible outcome. URLs store both editions, venue and seed, so reopening the URL reproduces the scenario. CSV exports include simulation metadata and events up to the current replay minute.
+The interface now has dedicated workspaces:
+
+| Workspace | Features |
+| --- | --- |
+| Matchroom | Badge-led fixture cards, independent eras, side swapping, random fixtures, venue settings, seed controls, replay, shot maps, xG and momentum |
+| Team sheets | Six formation boards, selectable real XIs, recorded coaches, and historical team comparisons |
+| Forecast lab | Exact 7×7 scoreline probability grid, both-teams-score/over-2.5 estimates, and seeded batches of 100, 1,000 or 10,000 scorelines |
+| Match report | Player goals, shots, xG, passes and completion; search, side filters and sorting; key moments and event rows that seek the replay |
+| Notebook | Up to 20 named saved fixtures and the last 10 completed results, stored only in this browser |
+| Data & method | Result/squad provenance, coverage and model assumptions |
+
+**Match setup:** choose the competition, edition and team for each side. Choose formations and approaches, inspect or edit each XI, select the venue and seed, then **Simulate match**. A visible pending-changes label distinguishes edited setup from the running simulation. **Swap sides** preserves each XI and game plan while swapping the teams. **Shuffle fixture** samples another pair of historical editions. The setup can be collapsed during analysis.
+
+**Replay:** play/pause, restart, seek, change speed, skip to full time or jump to the previous/next chance. Space toggles playback and left/right arrows seek five match minutes when focus is outside a control. Player ledgers, highlights and event tables reflect the current replay prefix. Charts and tables refresh at a capped cadence during playback.
+
+**Keep and share:** share links include both editions, selected XIs, formations, tactical choices, venue and seed. CSV exports include the current event prefix and configuration metadata. JSON exports contain the full simulated match, event list, XIs and configuration. Reproduction assumes the same model version and data snapshot. Notebook storage is local to the browser; it is not a cloud account. Storage failure is handled with a visible message and sharing/export remains available.
 
 **Year convention:** club editions use the season-ending year. City 2023 = 2022/23; Madrid 2016 = 2015/16. National editions use tournament years; Euro 2020 appears as `2020 / played 2021`, with internal year 2021. These are men's senior teams.
 
@@ -37,11 +52,23 @@ All team memberships are present. Three club editions have partial results in th
 Real goals scored/conceded are normalized by each edition's competition scoring average. An eight-match prior pulls small samples toward the competition mean. Expected 90-minute goals use:
 
 ```text
-home = clamp(1.35 × home.attack × away.defense × venue_factor, 0.15, 4.5)
-away = clamp(1.35 × away.attack × home.defense × venue_factor, 0.15, 4.5)
+home = clamp(1.35 × home.attack × away.defense × home_approach.attack × away_approach.exposure × venue_factor, 0.15, 4.5)
+away = clamp(1.35 × away.attack × home.defense × away_approach.attack × home_approach.exposure × venue_factor, 0.15, 4.5)
 ```
 
 Neutral venue factors are 1.0; home advantage uses 1.12 for home and 0.92 for away. These coefficients are explicit heuristic assumptions, not fitted or calibrated results. Cross-league and club/national comparisons assume equal baseline competition strength; no measured cross-competition adjustment is claimed.
+
+Approach multipliers are explicit experimental assumptions:
+
+| Approach | Own attacking multiplier | Exposure to opponent |
+| --- | --- | --- |
+| Balanced | 1.00 | 1.00 |
+| Keep the ball | 1.04 | 0.96 |
+| High press | 1.12 | 1.10 |
+| Counterattack | 1.06 | 1.02 |
+| Low block | 0.84 | 0.86 |
+
+Formations affect the suggested selection and pitch layout, not player ability or an additional scoring adjustment. Tactical choices are not fitted coach styles. The scoreline grid sums its 6+ tail buckets to retain all probability mass. Batch experiments sample the same independent Poisson pre-match score distribution without generating full event streams. Sampling frequencies are not held-out model evaluation or measured predictive accuracy.
 
 A seeded generator samples shot counts, shot quality, outcomes, pass events and event times. The generated goal rate matches the declared expected-goal rate in Monte Carlo tests. Match outcome estimates sum independent Poisson distributions for remaining goals, conditioned on score and time. The engine ends at 90 minutes: no extra time or shootouts. International input scores can include extra time, so tournament-derived rates are approximations.
 
@@ -72,7 +99,7 @@ Raw downloads live in ignored `.local/sources/`. The default builder cutoff stay
 
 The bundled archive covers **all 2,002 supported team editions**, with **75,844 player-edition records** and **2,002 recorded coach snapshots**. These are repeated historical player records, not 75,844 unique people.
 
-Expand **Squad & coach** under either team to browse the source roster, search players, inspect positions and squad numbers, and select an XI. A suggested XI aims for 4-3-3 where positions allow. Exactly 11 players with one goalkeeper are required. Players marked as departed in the source remain visible in the season archive and cannot enter the snapshot XI. Squad lists can include academy and reserve players: they are source snapshots, not official registration certificates or dated match eligibility lists.
+Expand **Squad & coach** under either team to browse the source roster, search players, inspect positions and squad numbers, and select an XI. Suggested XIs support 4-3-3, 4-2-3-1, 4-4-2, 3-5-2, 5-3-2 and 3-4-3 where positions allow. Changing formation resets that side’s suggested XI; users can then edit it. Exactly 11 players with one goalkeeper are required. Players marked as departed in the source remain visible in the season archive and cannot enter the snapshot XI. Squad lists can include academy and reserve players: they are source snapshots, not official registration certificates or dated match eligibility lists.
 
 Coaches are shown as **recorded in the source snapshot**. A season with multiple managers is not reduced to a claim that the displayed coach managed every match; complete managerial tenure histories are not included.
 
@@ -105,7 +132,7 @@ Python 3.10+ and Node.js 20+:
 npm test
 ```
 
-Tests verify all 85 club season/league memberships, every supported international tournament edition, model bounds, venue behavior, deterministic generation, score/event agreement, probability normalization, Monte Carlo goal rates, and legacy SQLite ingestion reliability. The UI also passed a DOM smoke check of presets, selectors, search, replay, deterministic scores, filters, invalid seeds, crests, and partial-data labels.
+Tests verify all 85 club season/league memberships, every supported international tournament edition, model bounds, venue behavior, deterministic generation, score/event agreement, probability normalization, Monte Carlo goal rates, and legacy SQLite ingestion reliability. Browser checks cover formations, tactical rate changes, team sheets, reproducible 10,000-match experiments, player totals and filters, highlight seeking, notebook persistence/removal, URL reloads, swapping, random fixtures, JSON export, system themes and mobile overflow. Pure model tests compare sampled outcomes with the exact distribution and check player-stat totals against events.
 
 ## Local API and legacy ingestion demo
 

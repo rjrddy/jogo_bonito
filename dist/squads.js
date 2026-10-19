@@ -1,3 +1,4 @@
+export const FORMATIONS={'4-3-3':[4,3,3],'4-2-3-1':[4,5,1],'4-4-2':[4,4,2],'3-5-2':[3,5,2],'5-3-2':[5,3,2],'3-4-3':[3,4,3]};
 export function positionGroup(player){
  const p=String(player.position||'').toUpperCase();
  if(p==='G'||p==='GK'||p.includes('GOALKEEPER'))return 'G';
@@ -5,10 +6,12 @@ export function positionGroup(player){
  if(p.startsWith('M'))return 'M';
  return 'F';
 }
-export function suggestedXI(players){
+export function suggestedXI(players,formation='4-3-3'){
+ if(!Object.hasOwn(FORMATIONS,formation))throw new Error('Unknown formation');
+ const [defenders,midfielders,forwards]=FORMATIONS[formation];
  const available=players.filter(p=>p.status!=='departed');
  const chosen=[];
- for(const [group,count] of [['G',1],['D',4],['M',3],['F',3]])chosen.push(...available.filter(p=>positionGroup(p)===group&&!chosen.some(c=>c.id===p.id)).slice(0,count));
+ for(const [group,count] of [['G',1],['D',defenders],['M',midfielders],['F',forwards]])chosen.push(...available.filter(p=>positionGroup(p)===group&&!chosen.some(c=>c.id===p.id)).slice(0,count));
  for(const p of available){if(chosen.length>=11)break;if(positionGroup(p)!=='G'&&!chosen.some(c=>c.id===p.id))chosen.push(p);}
  return chosen;
 }
