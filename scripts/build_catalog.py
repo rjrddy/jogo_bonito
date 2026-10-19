@@ -19,6 +19,8 @@ LEAGUES = {'en': ('Premier League', 'eng'), 'es': ('La Liga', 'es'), 'de': ('Bun
 TOURNAMENTS = {'FIFA World Cup': ('wc', 'World Cup'), 'UEFA Euro': ('euros', 'Euros'), 'Copa América': ('copa', 'Copa América')}
 ALIASES = {'Manchester City FC': 'Manchester City', 'Real Madrid CF': 'Real Madrid', 'FC Barcelona': 'Barcelona', 'Liverpool FC': 'Liverpool', 'Chelsea FC': 'Chelsea', 'Arsenal FC': 'Arsenal', 'Paris Saint-Germain FC': 'Paris Saint-Germain', 'Paris SG': 'Paris Saint-Germain', 'Bayern München': 'Bayern Munich', 'FC Bayern München': 'Bayern Munich', 'FC Internazionale Milano': 'Inter', 'Internazionale': 'Inter', 'Inter Milan': 'Inter', 'AC Milan': 'Milan', 'Juventus FC': 'Juventus', 'Club Atlético de Madrid': 'Atlético Madrid', 'Atletico Madrid': 'Atlético Madrid'}
 CRESTS = {'Manchester City': 'manchester-city', 'Real Madrid': 'real-madrid', 'Barcelona': 'barcelona', 'Arsenal': 'arsenal', 'Liverpool': 'liverpool', 'Chelsea': 'chelsea'}
+BADGE_MANIFEST = ROOT / 'dist/assets/crests/clubs.json'
+BADGES = json.loads(BADGE_MANIFEST.read_text())['names'] if BADGE_MANIFEST.exists() else {}
 
 
 def clean(name):
@@ -48,7 +50,7 @@ def edition(competition, label, year, season, rows, expected=None):
     for name, s in sorted(stats.items()):
         attack = (s['gf'] + prior * mean) / (s['played'] + prior) / mean
         defense = (s['ga'] + prior * mean) / (s['played'] + prior) / mean
-        result.append(dict(id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season, competition=competition, competition_name=label, kind='club' if competition in LEAGUES else 'national', attack=round(attack, 5), defense=round(defense, 5), **s, crest=f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None, last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
+        result.append(dict(id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season, competition=competition, competition_name=label, kind='club' if competition in LEAGUES else 'national', attack=round(attack, 5), defense=round(defense, 5), **s, crest=BADGES.get(name) or (f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None), last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
     coverage = dict(competition=competition, label=label, year=year, season=season, teams=len(stats), matches=len(rows), expected_matches=expected, complete=len(rows)==expected if expected else None, last_match=max(r['date'] for r in rows))
     return result, coverage
 

@@ -47,7 +47,7 @@ A seeded generator samples shot counts, shot quality, outcomes, pass events and 
 
 **These are hypothetical matches, not historical replays or calibrated forecasts.** Historical squads and recorded coaches are available in the builder. Suggested XIs are based on listed positions and source order, not verified historical starters. Actions are attributed to selected players with positional heuristic weights; their abilities and coaches do not alter the team-level outcome model. Injuries and tactical styles are not modeled. Possession remains a completed-pass-share proxy. Momentum reflects generated attacking events.
 
-The original six club crests are bundled locally. Other team editions use readable initials when a crest asset is not available; no incorrect badge is substituted.
+Every club edition now has a locally bundled real badge: **192 club identities**, covering **249 historical name variants** across **all 1,660 club editions**. National teams retain their separate fallback behavior. Badges identify the club; a complete year-specific badge design history is not claimed. The badge manifest records each source, asset hash, alias, and edition mapping, and tests reject missing badge coverage.
 
 ## Data provenance and refresh
 
@@ -124,3 +124,10 @@ This unauthenticated API binds only to loopback and is intended for local develo
 ## Remaining platform work
 
 Individual player/coach models; full transfer dates and manager tenures; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
+
+
+## Club badge assets
+
+Badge provenance and exact mappings are in `dist/assets/crests/clubs.json`. Most additional vectors come from [JoseArroyave/football-logos](https://github.com/JoseArroyave/football-logos); the existing six crests are retained from football-data.org, and the original historical Arles-Avignon and Évian crests are sourced from Wikimedia. Club trademarks and artwork belong to their respective owners.
+
+`python3 scripts/build_badges.py` regenerates the bundled assets and mappings from cached source assets in `.local/sources/`. Normal catalog refreshes reuse the manifest, preserving all resolved badges. Any newly introduced club must be assigned an actual crest before the coverage tests pass.
