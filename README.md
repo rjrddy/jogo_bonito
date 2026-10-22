@@ -21,6 +21,7 @@ The interface now has dedicated workspaces:
 | --- | --- |
 | Matchroom | Badge-led fixture cards, independent eras, side swapping, random fixtures, venue settings, seed controls, replay, shot maps, xG and momentum |
 | Team sheets | Six formation boards, selectable real XIs, recorded coaches, and historical team comparisons |
+| Scout lab | Every under-21 player in the snapshot, projected and matched to club editions by two offline-trained models, plus a form for prospects the data has never seen |
 | Forecast lab | Exact 7×7 scoreline probability grid, both-teams-score/over-2.5 estimates, and seeded batches of 100, 1,000 or 10,000 scorelines |
 | Match report | Player goals, shots, xG, passes and completion; search, side filters and sorting; key moments and event rows that seek the replay |
 | Notebook | Up to 20 named saved fixtures and the last 10 completed results, stored only in this browser |
@@ -30,7 +31,7 @@ The interface now has dedicated workspaces:
 
 **Replay:** play/pause, restart, seek, change speed, skip to full time or jump to the previous/next chance. Space toggles playback and left/right arrows seek five match minutes when focus is outside a control. Player ledgers, highlights and event tables reflect the current replay prefix. Charts and tables refresh at a capped cadence during playback.
 
-**Keep and share:** share links include both editions, selected XIs, formations, tactical choices, venue and seed. CSV exports include the current event prefix and configuration metadata. JSON exports contain the full simulated match, event list, XIs and configuration. Reproduction assumes the same model version and data snapshot. Notebook storage is local to the browser; it is not a cloud account. Storage failure is handled with a visible message and sharing/export remains available.
+**Keep and share:** share links include both editions, selected XIs, formations, tactical choices, venue and seed. A `?view=` parameter opens a specific workspace directly, so `?view=scout` links straight to the Scout lab. CSV exports include the current event prefix and configuration metadata. JSON exports contain the full simulated match, event list, XIs and configuration. Reproduction assumes the same model version and data snapshot. Notebook storage is local to the browser; it is not a cloud account. Storage failure is handled with a visible message and sharing/export remains available.
 
 **Year convention:** club editions use the season-ending year. City 2023 = 2022/23; Madrid 2016 = 2015/16. National editions use tournament years; Euro 2020 appears as `2020 / played 2021`, with internal year 2021. These are men's senior teams.
 
@@ -76,6 +77,75 @@ A seeded generator samples shot counts, shot quality, outcomes, pass events and 
 
 Every club edition now has a locally bundled real badge: **192 club identities**, covering **249 historical name variants** across **all 1,660 club editions**. National teams retain their separate fallback behavior. Badges identify the club; a complete year-specific badge design history is not claimed. The badge manifest records each source, asset hash, alias, and edition mapping, and tests reject missing badge coverage.
 
+## Scout lab
+
+Two supervised models, fitted offline by `scripts/build_scouting.py` from this repository's own data. No network access, no API key, no third-party model: the browser downloads the weights and runs inference itself.
+
+Both are named for what the squad data can actually witness, which is narrower than the word "scouting" suggests. Read the limits below before trusting a number.
+
+**Destination ranking** predicts which club a player moves to next. The snapshots record **8,412 club-to-club moves**; 5,327 of them train the weights and the 3,085 later ones are held back. Training is a sampled softmax over one true destination against 8 sampled alternatives. The score is a learned club embedding dotted with a player tower, plus named additive player×club terms, so every recommendation decomposes into reasons rather than arriving as a bare number.
+
+**Progression** projects which calibre of squad list a player first seen at 21 or younger appears on 2 to 6 seasons later, across four classes: no further top-five squad, squad-level club, regular-level club, elite club. Class priors are recalibrated on cohorts the weights never saw. Its output feeds the destination ranker as a feature, which is what lets the ranker treat a highly-rated prospect's options differently from an ordinary mover's.
+
+### Held-out results
+
+Validation is a forward split in time, never a random shuffle. For destinations, every observed move from **2021** onwards; for progression, cohorts from **2018** onwards. Baselines face the identical task on the identical rows.
+
+Ranking the true destination among the ~96 club editions available that season (n = 3,085):
+
+| | Top 1 | Top 5 | Top 10 | Top 25 | MRR | Median rank |
+| --- | --- | --- | --- | --- | --- | --- |
+| **This model** | **4.3%** | **21.0%** | **38.1%** | **65.9%** | **0.146** | **15** |
+| Most-active clubs | 1.5% | 5.8% | 12.1% | 28.6% | 0.060 | 46 |
+| Closest club level | 1.4% | 6.4% | 11.7% | 31.1% | 0.062 | 44 |
+
+Progression, on 3,285 held-out cohorts: accuracy **50.7%** against 46.8% for always predicting the most common class, and a Brier score of **0.6432** against 0.687 for the base rate (0.6454 before recalibration). Per-class AUC: no further top-five squad 0.667, squad-level club 0.549, regular-level club 0.581, elite club 0.777 — the middle classes are barely separable and the model card prints that rather than hiding it. Every class lands within 2.5 points of its observed rate.
+
+### Why the numbers mean what they say
+
+* A club's profile for a destination season describes that club **the season before**, so no candidate feature sees the season the prospect would be arriving into — including the prospect's own presence in that squad.
+* Club identity comes from the bundled badge manifest, which resolves the catalog's 249 club spellings to **192 real clubs**. Without it a rename such as *Athletic Bilbao* to *Athletic Club* reads as a transfer; fixing it removed 646 spurious moves from the training data and the metrics above are the lower, honest ones that resulted.
+* Cohorts whose window runs past the 2026-10-18 cutoff are left **unlabelled**, not guessed at: 7,974 of 19,076 pool entries have an observable outcome.
+* The progression window deliberately skips the season immediately after the cohort season. Counting it made the target tautological — a teenager on an elite squad list who is listed there again a year later would "reach elite" without progressing. Measured on held-out cohorts, including that season buys 7.7 points of accuracy lift over the majority class but keeps the artifact; skipping two seasons leaves censoring at 59% of the label and only 0.9 points of lift. Skipping one keeps 3.9% of lift with the artifact gone.
+* The ranker is trained on moves only, so it has no fitted opinion on a player staying put; that term keeps a weight of exactly zero and the interface says so.
+* `tests/scouting.test.mjs` replays 40 prospects and 120 candidate pairs from the Python pipeline through the JavaScript port and fails on any divergence beyond 1e-9. The feature builders exist twice and must agree exactly; a width mismatch raises rather than silently truncating.
+
+### What the ranker learned
+
+Fitted weights on the named cross terms, largest first:
+
+| Term | Weight |
+| --- | --- |
+| position_need | +6.244 |
+| nation_share | +3.148 |
+| same_competition | +1.738 |
+| corridor | +1.205 |
+| youth_fit | +0.933 |
+| step_up_young | +0.622 |
+| elite_step | -0.517 |
+| level_gap_sq | -0.366 |
+
+A gap at the prospect's position dominates everything else, then compatriots already in the squad, then staying in the same league. The level terms are negative for everyone, including the two that interact with the progression score: in this data the average move by a young player is lateral or **downward**, because a teenager at a strong club most often goes out on loan. That is a real pattern, and it is why the output is labelled "where players like this go next" rather than "best fit".
+
+### Honest limits
+
+* **There is no academy data in this project.** The pool is the 19,076 under-21 player-seasons inside the bundled senior-squad snapshots, covering 142 nationalities across all six confederations. That is the youngest cohort these sources can observe — not a youth-team intake. A player who never reached a senior squad list is invisible here. The *Enter a prospect* form exists for players the snapshot has never seen; it scores the attributes you supply and cannot verify them.
+* **A squad list records who a club registered, never who played.** So the progression target is which calibre of list a career later appears on, not how good it became. A teenager who stays registered at an elite club for years without playing reaches the top class exactly like one who starred there, and the model cannot tell them apart.
+* **Consequently the highest projections cluster on big-club academy intakes.** Being at an elite club at 18 is itself the strongest evidence of being on an elite club's list at 21. Nine of the ten highest 2019 projections are Manchester City academy names. The model is right about the label and the label is not ability.
+* **The ranker predicts recorded destinations, loans included**, which this source cannot separate from permanent transfers. It reports the market; it does not name who ought to sign a player.
+* Squad lists carry **no minutes, fees, transfer values, injuries or scouting grades**. None of those inform the models, because none exist in this data.
+* "No further top-five squad" is **censoring, not failure**. A move to a league outside these five is indistinguishable from leaving football.
+* Cross-era and cross-league strength is uncalibrated here, exactly as everywhere else in this project.
+* Archetypes are k-means clusters over the ranker's latent space, named from their own members' averages.
+
+Rebuild the models (a few minutes, pure standard library, seed 20261021):
+
+```sh
+npm run data:scouting
+```
+
+This writes `dist/scouting/model.json` (98 KB of weights, metrics and parity fixtures), `clubs.json` (793 KB of club profiles) and `prospects.json` (1241 KB of pool rows). The Scout lab fetches all three the first time it is opened, so the Matchroom pays nothing for them.
+
 ## Data provenance and refresh
 
 Sources are [OpenFootball](https://github.com/openfootball/football.json), [FootballCSV / Soccerverse](https://github.com/footballcsv/cache.soccerverse), and [Mart Jürisoo's international results](https://github.com/martj42/international_results), published under CC0. The catalog includes source URLs, SHA-256 hashes, per-edition match counts, cutoffs, team counts, and completeness.
@@ -92,6 +162,8 @@ To download refreshed sources first (requires network access):
 python3 scripts/download_sources.py
 python3 scripts/build_catalog.py --as-of YYYY-MM-DD
 ```
+
+Scouting models are rebuilt separately with `npm run data:scouting`, which reads only `dist/catalog.json` and `dist/rosters/`; rerun it after any catalog or roster refresh so the pool and the held-out metrics match the snapshot.
 
 Raw downloads live in ignored `.local/sources/`. The default builder cutoff stays fixed for reproducibility; explicitly update it when refreshing. Source hashes detect changed upstream snapshots. Refreshing data or changing model code can change outputs; preserve the catalog and model version when comparing experiments.
 
@@ -132,7 +204,7 @@ Python 3.10+ and Node.js 20+:
 npm test
 ```
 
-Tests verify all 85 club season/league memberships, every supported international tournament edition, model bounds, venue behavior, deterministic generation, score/event agreement, probability normalization, Monte Carlo goal rates, and legacy SQLite ingestion reliability. Browser checks cover formations, tactical rate changes, team sheets, reproducible 10,000-match experiments, player totals and filters, highlight seeking, notebook persistence/removal, URL reloads, swapping, random fixtures, JSON export, system themes and mobile overflow. Pure model tests compare sampled outcomes with the exact distribution and check player-stat totals against events.
+Tests verify all 85 club season/league memberships, every supported international tournament edition, model bounds, venue behavior, deterministic generation, score/event agreement, probability normalization, Monte Carlo goal rates, and legacy SQLite ingestion reliability. Browser checks cover formations, tactical rate changes, team sheets, reproducible 10,000-match experiments, player totals and filters, highlight seeking, notebook persistence/removal, URL reloads, swapping, random fixtures, JSON export, system themes and mobile overflow. Pure model tests compare sampled outcomes with the exact distribution and check player-stat totals against events. Scouting tests cover cross-language feature parity, no-leakage club profiling, club-identity resolution, pool bounds, unlabelled recent cohorts, additive fit explanations, probability normalization, and that every published metric still beats the baseline it is shown against. A DOM shim drives the real Scout lab controller against the real markup, so a missing control or a broken render path fails the suite.
 
 ## Local API and legacy ingestion demo
 
@@ -150,7 +222,7 @@ This unauthenticated API binds only to loopback and is intended for local develo
 
 ## Remaining platform work
 
-Individual player/coach models; full transfer dates and manager tenures; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
+Player ability ratings from match data; full transfer dates and manager tenures; real academy and youth-team rosters; minutes, fees and valuations to replace squad-list proxies; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
 
 
 ## Club badge assets
