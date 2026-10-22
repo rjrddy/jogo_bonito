@@ -106,12 +106,42 @@ assert.deepEqual(missing,[],'scout.js reached for ids that index.html does not d
 assert.equal($('scout-loading').hidden,true,'the loading note must be hidden once the models arrive');
 assert.equal($('scout-board').hidden,false);
 assert.ok($('scout-list').children.length>0,'the prospect board must render cards');
-assert.match($('scout-pool-count').textContent,/under-21 seasons · \d+ nationalities/);
-assert.ok(Number($('scout-nations').textContent)>60,'the headline nationality count must be populated');
+const prospectFile=JSON.parse(fs.readFileSync('dist/scouting/prospects.json','utf8'));
+const clubFile=JSON.parse(fs.readFileSync('dist/scouting/clubs.json','utf8'));
+const clubYear=Object.fromEntries(clubFile.clubs.map(c=>[c.id,c.year]));
+const editionAt=i=>prospectFile.editions[i];
+const yearIndex=prospectFile.fields.indexOf('edition');
+const currentRows=prospectFile.rows.filter(r=>clubYear[editionAt(r[yearIndex])]===prospectFile.current_year);
+const outcomeIndex=prospectFile.fields.indexOf('outcome');
+
+// Scouting is forward-looking by default: the newest squads, not the archive.
+assert.equal($('scout-year').value,'current','the board must open on the current squads');
+assert.match($('scout-pool-count').textContent,/players in the \d{4}\/\d{2} squads, aged as of today · \d+ nationalities/);
+assert.ok(currentRows.length>0&&currentRows.every(r=>r[outcomeIndex]===null),
+ 'current-season prospects must have no recorded outcome; their window runs past the cutoff');
+assert.equal(Number($('scout-current-count').textContent.replace(/,/g,'')),currentRows.length);
+assert.ok(Number($('scout-nations').textContent)>60,'the headline counts the current crop, not the archive');
 assert.ok($('scout-region').children.length>=6,'every confederation should be filterable');
-assert.ok($('scout-year').children.length>10,'every season should be filterable');
+// The shim only tracks appended nodes; the three scope options come from the markup.
+const seasonGroup=$('scout-year').children.find(c=>c.tagName==='OPTGROUP');
+assert.ok(seasonGroup&&seasonGroup.children.length>10,'every season must stay individually selectable');
+assert.ok(seasonGroup.children.some(o=>/current/.test(o.textContent)),'the newest season must be marked current');
 const modelFile=JSON.parse(fs.readFileSync('dist/scouting/model.json','utf8'));
-console.log(`Board: ${$('scout-list').children.length} cards rendered, ${new Set(Object.values(modelFile.regions)).size} confederations, ${$('scout-year').children.length} seasons.`);
+console.log(`Board: opens on ${currentRows.length} current ${prospectFile.current_year-1}/${String(prospectFile.current_year).slice(2)} prospects, ${new Set(Object.values(modelFile.regions)).size} confederations.`);
+
+// ---- 1b. Scope switches between scouting and the recorded track record.
+$('scout-year').value='tracked';$('scout-year').onchange();
+const trackedCount=$('scout-pool-count').textContent;
+assert.match(trackedCount,/whose outcome is recorded/);
+$('scout-year').value='all';$('scout-year').onchange();
+assert.match($('scout-pool-count').textContent,/across every season/);
+const allCount=Number($('scout-pool-count').textContent.replace(/,/g,'').match(/^(\d+)/)[1]);
+assert.equal(allCount,prospectFile.rows.length,'every-season scope must cover the whole pool');
+$('scout-year').value='current';$('scout-year').onchange();
+const currentCount=Number($('scout-pool-count').textContent.replace(/,/g,'').match(/^(\d+)/)[1]);
+assert.equal(currentCount,currentRows.length);
+assert.ok(currentCount<allCount,'the current crop must be a strict subset of the archive');
+console.log(`Scope: ${currentCount} current prospects, ${allCount} across every season, ${trackedCount.match(/^[\d,]+/)[0]} with a recorded outcome.`);
 
 // ---- 2. Filters narrow the pool and selecting a prospect renders a full report.
 $('scout-position').value='F';
@@ -127,8 +157,23 @@ firstCard.onclick();
 const report=$('scout-report');
 const reportText=report.textContent;
 assert.ok(report.children.length>4,'the report must render its blocks');
-for(const fragment of ['Where they are listed next','Where players like this go next','Profiles like this','Closest archetype'])
+for(const fragment of ['Where they are listed next','Where players like this go next',
+ 'Players who looked like this, and what happened','Closest archetype'])
  assert.ok(reportText.includes(fragment),`the report is missing "${fragment}"`);
+// A current prospect has no outcome of its own, so every comparable must carry one.
+const outcomeNames=modelFile.progression.outcomes.map(o=>o.toLowerCase());
+const comparables=[];
+(function collect(node){for(const child of node.children||[]){
+ if(typeof child!=='object'||!child)continue;
+ if(String(child.className||'').split(/\s+/).includes('compare-card'))comparables.push(child);
+ collect(child);}})(report);
+assert.ok(comparables.length>=3,'the report must offer comparables');
+for(const card of comparables)
+ assert.ok(outcomeNames.some(name=>card.textContent.toLowerCase().includes(name)),
+  'every comparable to an unresolved prospect must show a recorded outcome: '+card.textContent);
+// And the player being scouted is shown at the age they are today.
+assert.match(report.textContent,/\d+ today · \d+ in \d{4}\/\d{2}/,'a current prospect must be aged to today');
+console.log(`Comparables: ${comparables.length} past players, every one with a recorded outcome.`);
 assert.ok(reportText.includes(modelFile.progression.outcomes[0]),'the censoring class must be named in the report');
 assert.ok(/fit share/.test(reportText),'fit rows must be rendered');
 console.log('Report: identity, projection, club fits, archetype and comparables all rendered.');

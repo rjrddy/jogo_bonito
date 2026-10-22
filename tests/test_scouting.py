@@ -75,6 +75,43 @@ class FeatureTests(unittest.TestCase):
                         candidate_vector(prospect, club, target, spec, exclude_self=True)[need])
 
 
+class CurrentCropTests(unittest.TestCase):
+    """The lab is for scouting now, so the newest season has to be usable and
+    has to be honestly unlabelled."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pool = json.loads((ROOT / 'dist/scouting/prospects.json').read_text())
+        cls.clubs = {c['id']: c for c in json.loads((ROOT / 'dist/scouting/clubs.json').read_text())['clubs']}
+        cls.index = {name: i for i, name in enumerate(cls.pool['fields'])}
+
+    def year_of(self, row):
+        return self.clubs[self.pool['editions'][row[self.index['edition']]]]['year']
+
+    def test_current_year_is_the_newest_season_present(self):
+        self.assertEqual(self.pool['current_year'], max(c['year'] for c in self.clubs.values()))
+
+    def test_the_current_crop_is_large_enough_to_scout(self):
+        current = [r for r in self.pool['rows'] if self.year_of(r) == self.pool['current_year']]
+        self.assertGreater(len(current), 500, 'the newest season must carry a usable prospect pool')
+        nations = {r[self.index['nationality']] for r in current if r[self.index['nationality']] is not None}
+        self.assertGreater(len(nations), 50, 'the current crop should still be a global one')
+
+    def test_current_prospects_carry_no_outcome(self):
+        """Their six-season window runs past the cutoff, so a label would be a lie."""
+        for row in self.pool['rows']:
+            if self.year_of(row) == self.pool['current_year']:
+                self.assertIsNone(row[self.index['outcome']])
+                self.assertIsNone(row[self.index['peak_edition']])
+
+    def test_every_prospect_has_a_birth_date_so_it_can_be_aged_to_today(self):
+        for row in self.pool['rows']:
+            born = row[self.index['birth_date']]
+            self.assertRegex(born or '', r'^\d{4}-\d{2}-\d{2}$')
+            # The season age must agree with the birth year it was derived from.
+            self.assertEqual(self.year_of(row) - int(born[:4]), int(row[self.index['age']]))
+
+
 class ModelTrainingTests(unittest.TestCase):
     def test_classifier_separates_a_linearly_separable_problem(self):
         rows = [([1.0, i / 400], 1 if i / 400 > 0.5 else 0) for i in range(400)]

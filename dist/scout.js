@@ -1,6 +1,6 @@
 import {playerVector,progression,rankClubs,latentPlayer,archetypeOf,similarTo,REASONS,
         POSITION_NAMES,COMPETITION_NAMES} from './scouting-engine.js';
-import {hydrateClubs,hydrateProspects,prospectRecord} from './scout-data.js';
+import {hydrateClubs,hydrateProspects,prospectRecord,ageOn} from './scout-data.js';
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;};
 const pct=n=>(n*100).toFixed(n>=0.1?0:1)+'%';
@@ -10,8 +10,12 @@ const WATCHLIST='jogo.scout.v1';
 // prospect. The three model files load once, the first time this view opens.
 export function createScout({openInMatchroom,notify}){
  let model,clubs,pool,mode='board',selected=null,watchOnly=false,booted=null;
- let latents=[],elite=[],observable=[],neighbours=[];
+ let latents=[],elite=[],observable=[],neighbours=[],resolved=[];
+ let currentYear=null;
  let refreshWatchButton=()=>{};
+ // In current scope a prospect's age today is what matters; a past cohort is
+ // read at the age they actually were that season.
+ const ageFor=prospect=>($('scout-year')?.value==='current'&&prospect.age_now!=null)?prospect.age_now:prospect.age;
  const text=(id,value)=>{$(id).textContent=value;};
 
  async function boot(){
@@ -22,6 +26,7 @@ export function createScout({openInMatchroom,notify}){
   }));
   model=files[0];
   clubs=hydrateClubs(files[1]);
+  currentYear=files[2].current_year;
   pool=hydrateProspects(files[2],clubs);
   // One pass over the pool: the latent vector and projection every view needs.
   for(const prospect of pool){
@@ -34,6 +39,7 @@ export function createScout({openInMatchroom,notify}){
   }
   // Built once: the similarity search reads this on every report.
   neighbours=pool.map((prospect,index)=>({...prospect,latent:latents[index]}));
+  resolved=neighbours.filter(p=>p.outcome!==null&&p.outcome!==undefined);
   buildControls();
  }
 
@@ -43,10 +49,17 @@ export function createScout({openInMatchroom,notify}){
   $('scout-competition').append(...Object.entries(COMPETITION_NAMES).map(([code,name])=>
    Object.assign(document.createElement('option'),{value:code,textContent:name})));
   const years=[...new Set(pool.map(p=>clubs.byId.get(p.edition).year))].sort((a,b)=>b-a);
-  $('scout-year').append(...years.map(y=>Object.assign(document.createElement('option'),{value:String(y),textContent:y})));
+  const seasons=document.createElement('optgroup');
+  seasons.label='One season';
+  seasons.append(...years.map(y=>Object.assign(document.createElement('option'),
+   {value:String(y),textContent:y===currentYear?`${y} · current`:String(y)})));
+  $('scout-year').append(seasons);
   $('cp-nations').append(...Object.keys(model.nations).sort().map(code=>
    Object.assign(document.createElement('option'),{value:code})));
-  text('scout-nations',String(new Set(pool.map(p=>p.nationality).filter(Boolean)).size));
+  const current=pool.filter(p=>p.current);
+  text('scout-current-count',current.length.toLocaleString());
+  text('scout-current-season',`${currentYear-1}/${String(currentYear).slice(2)}`);
+  text('scout-nations',String(new Set(current.map(p=>p.nationality).filter(Boolean)).size));
   for(const id of ['scout-search','scout-position','scout-region','scout-competition','scout-year','scout-age','scout-sort'])
    $(id).addEventListener(id==='scout-search'?'input':'change',renderBoard);
   const watch=el('button','outline scout-watch-toggle');
@@ -88,17 +101,19 @@ export function createScout({openInMatchroom,notify}){
  function filtered(){
   const query=$('scout-search').value.trim().toLocaleLowerCase();
   const position=$('scout-position').value,region=$('scout-region').value;
-  const competition=$('scout-competition').value,year=$('scout-year').value;
+  const competition=$('scout-competition').value,scope=$('scout-year').value;
   const maxAge=Number($('scout-age').value),watch=new Set(watchOnly?readWatchlist():[]);
   const rows=[];
   for(const prospect of pool){
    if(watchOnly&&!watch.has(prospect.index))continue;
-   if(prospect.age>maxAge)continue;
+   if(ageFor(prospect)>maxAge)continue;
    if(position!=='all'&&prospect.position!==position)continue;
    if(region!=='all'&&model.regions[prospect.nationality]!==region)continue;
    const club=clubs.byId.get(prospect.edition);
    if(competition!=='all'&&club.competition!==competition)continue;
-   if(year!=='all'&&String(club.year)!==year)continue;
+   if(scope==='current'&&!prospect.current)continue;
+   if(scope==='tracked'&&prospect.outcome===null)continue;
+   if(/^\d{4}$/.test(scope)&&String(club.year)!==scope)continue;
    if(query&&!`${prospect.name} ${club.name} ${prospect.nationality||''}`.toLocaleLowerCase().includes(query))continue;
    rows.push(prospect);
   }
@@ -106,7 +121,7 @@ export function createScout({openInMatchroom,notify}){
   const compare={
    elite:(a,b)=>elite[b.index]-elite[a.index],
    observable:(a,b)=>observable[b.index]-observable[a.index],
-   age:(a,b)=>a.age-b.age||elite[b.index]-elite[a.index],
+   age:(a,b)=>ageFor(a)-ageFor(b)||elite[b.index]-elite[a.index],
    name:(a,b)=>a.name.localeCompare(b.name),
   }[sort];
   rows.sort(compare);
@@ -115,7 +130,11 @@ export function createScout({openInMatchroom,notify}){
 
  function renderBoard(){
   const rows=filtered(),root=$('scout-list');
-  text('scout-pool-count',`${rows.length.toLocaleString()} of ${pool.length.toLocaleString()} under-${model.pool.max_age} seasons · ${new Set(rows.map(r=>r.nationality).filter(Boolean)).size} nationalities`);
+  const scope=$('scout-year').value;
+  const scopeLabel=scope==='current'?`in the ${currentYear-1}/${String(currentYear).slice(2)} squads, aged as of today`
+   :scope==='tracked'?'from past cohorts whose outcome is recorded'
+   :scope==='all'?'across every season in the snapshot':`from the ${scope} season`;
+  text('scout-pool-count',`${rows.length.toLocaleString()} players ${scopeLabel} · ${new Set(rows.map(r=>r.nationality).filter(Boolean)).size} nationalities`);
   root.replaceChildren();
   if(!rows.length){root.append(el('p','empty-state','No prospect matches these filters.'));return;}
   for(const prospect of rows.slice(0,150)){
@@ -123,7 +142,12 @@ export function createScout({openInMatchroom,notify}){
    const card=el('button','scout-card'+(selected&&selected.index===prospect.index?' active':''));
    card.type='button';card.setAttribute('role','listitem');
    const head=el('div','scout-card-head');
-   head.append(flag(prospect.nationality),el('strong','',prospect.name),el('span','scout-age',`${prospect.age}`));
+   const shown=ageFor(prospect);
+   const age=el('span','scout-age',`${shown}`);
+   age.title=prospect.age_now!=null&&prospect.age_now!==prospect.age
+    ?`${prospect.age_now} today · ${prospect.age} during ${club.year-1}/${String(club.year).slice(2)}`
+    :`${prospect.age} during ${club.year-1}/${String(club.year).slice(2)}`;
+   head.append(flag(prospect.nationality),el('strong','',prospect.name),age);
    const meta=el('div','scout-card-meta');
    meta.append(el('span','',`${POSITION_NAMES[prospect.position]} · ${club.name}`),el('span','',club.year));
    const track=el('div','scout-card-track');
@@ -138,16 +162,19 @@ export function createScout({openInMatchroom,notify}){
 
  // ---- Fit ranking, shared by the board and the custom form
  function fitFor(record,origin,scope,limit=12){
-  const targets=(scope==='next'
-   ?(clubs.byYear.get(origin.year+1)||clubs.byYear.get(origin.year)||[])
-   :clubs.list).filter(club=>club.club!==origin.club);
-  if(!targets.length)return {entries:[],targets};
+  // The newest season in the snapshot has no following season, so the latest
+  // squads are ranked against their own season and the copy says so.
+  const nextYear=clubs.byYear.has(origin.year+1)?origin.year+1:origin.year;
+  const targets=(scope==='next'?(clubs.byYear.get(nextYear)||[]):clubs.list)
+   .filter(club=>club.club!==origin.club);
+  if(!targets.length)return {entries:[],targets,year:nextYear,sameSeason:nextYear===origin.year};
   const ranked=rankClubs(record,origin,targets,model,targets.length);
   const best=new Map();
   for(const entry of ranked)if(!best.has(entry.target.club))best.set(entry.target.club,entry);
   const grouped=[...best.values()];
   const total=grouped.reduce((sum,entry)=>sum+entry.share,0)||1;
-  return {entries:grouped.slice(0,limit).map(entry=>({...entry,share:entry.share/total})),targets,clubs:grouped.length};
+  return {entries:grouped.slice(0,limit).map(entry=>({...entry,share:entry.share/total})),targets,
+   clubs:grouped.length,year:nextYear,sameSeason:nextYear===origin.year};
  }
 
  function reasonList(entry){
@@ -176,7 +203,11 @@ export function createScout({openInMatchroom,notify}){
   const identity=el('div','scout-identity');
   identity.append(flag(prospect.nationality),el('h3','',prospect.name||'Unnamed prospect'));
   const line=el('p','scout-identity-meta');
-  line.textContent=`${prospect.age} years · ${POSITION_NAMES[prospect.position]}${prospect.number?` · number ${prospect.number}`:''} · ${prospect.nationality||'nationality unknown'}`;
+  const season=`${club.year-1}/${String(club.year).slice(2)}`;
+  const ageText=prospect.age_now!=null&&prospect.age_now!==prospect.age
+   ? `${prospect.age_now} today · ${prospect.age} in ${season}`
+   : `${prospect.age} years`;
+  line.textContent=`${ageText} · ${POSITION_NAMES[prospect.position]}${prospect.number?` · number ${prospect.number}`:''} · ${prospect.nationality||'nationality unknown'}`;
   identity.append(line);
   const current=el('div','scout-current-club');
   current.append(crest(club,40));
@@ -218,9 +249,11 @@ export function createScout({openInMatchroom,notify}){
   const fit=fitFor(record,club,scope);
   const fitPanel=el('div','scout-block');
   fitPanel.append(el('h4','','Where players like this go next'));
-  fitPanel.append(el('p','scout-block-note',scope==='next'
-   ?`Ranked across the ${fit.targets.length} club editions of the following season, excluding their current club.`
-   :`Closest-matching edition of each of ${fit.clubs||0} club identities, every era considered.`));
+  fitPanel.append(el('p','scout-block-note',scope!=='next'
+   ?`Closest-matching edition of each of ${fit.clubs||0} club identities, every era considered.`
+   :fit.sameSeason
+    ?`Ranked across the ${fit.targets.length} other clubs of ${fit.year}, the newest season in this snapshot. There is no later season to rank against yet.`
+    :`Ranked across the ${fit.targets.length} club editions of ${fit.year}, excluding their current club.`));
   fitPanel.append(el('p','scout-block-note','This ranks the destinations players with this profile were actually recorded moving to. The source cannot separate a loan from a transfer, so for a teenager at a strong club the likeliest next club is often a smaller one — the model is reporting the market, not naming who ought to sign them.'));
   for(const entry of fit.entries){
    const row=el('article','fit-row');
@@ -243,11 +276,17 @@ export function createScout({openInMatchroom,notify}){
 
   // Comparable prospects
   if(!options.custom||options.compare!==false){
-   const matches=similarTo(latent,neighbours,options.custom?7:8)
+   // For a player whose own outcome is still unknown, the useful comparison is
+   // to past players who look the same and whose careers are already recorded.
+   const tracked=prospect.outcome===null||prospect.outcome===undefined;
+   const field=tracked?resolved:neighbours;
+   const matches=similarTo(latent,field,options.custom?9:10)
     .filter(match=>options.custom||match.entry.index!==prospect.index).slice(0,6);
    const comparePanel=el('div','scout-block');
-   comparePanel.append(el('h4','','Profiles like this'));
-   comparePanel.append(el('p','scout-block-note','Nearest prospects by cosine similarity in the fit model’s learned player space. A shared profile is not a shared ability.'));
+   comparePanel.append(el('h4','',tracked?'Players who looked like this, and what happened':'Profiles like this'));
+   comparePanel.append(el('p','scout-block-note',tracked
+    ?'Nearest past prospects by cosine similarity in the ranker’s learned player space, restricted to careers the snapshot can already score. A shared profile is not a shared ability, and six neighbours are an illustration, not a forecast.'
+    :'Nearest prospects by cosine similarity in the ranker’s learned player space. A shared profile is not a shared ability.'));
    const list=el('div','compare-list');
    for(const match of matches){
     const other=match.entry,otherClub=clubs.byId.get(other.edition);

@@ -21,7 +21,7 @@ The interface now has dedicated workspaces:
 | --- | --- |
 | Matchroom | Badge-led fixture cards, independent eras, side swapping, random fixtures, venue settings, seed controls, replay, shot maps, xG and momentum |
 | Team sheets | Six formation boards, selectable real XIs, recorded coaches, and historical team comparisons |
-| Scout lab | Every under-21 player in the snapshot, projected and matched to club editions by two offline-trained models, plus a form for prospects the data has never seen |
+| Scout lab | The current crop of under-21 players, aged to today, projected and matched to club editions by two offline-trained models; scope switches to past cohorts to check the track record, plus a form for prospects the data has never seen |
 | Forecast lab | Exact 7×7 scoreline probability grid, both-teams-score/over-2.5 estimates, and seeded batches of 100, 1,000 or 10,000 scorelines |
 | Match report | Player goals, shots, xG, passes and completion; search, side filters and sorting; key moments and event rows that seek the replay |
 | Notebook | Up to 20 named saved fixtures and the last 10 completed results, stored only in this browser |
@@ -84,6 +84,8 @@ Two supervised models, fitted offline by `scripts/build_scouting.py` from this r
 Both are named for what the squad data can actually witness, which is narrower than the word "scouting" suggests. Read the limits below before trusting a number.
 
 **Destination ranking** predicts which club a player moves to next. The snapshots record **8,412 club-to-club moves**; 5,327 of them train the weights and the 3,085 later ones are held back. Training is a sampled softmax over one true destination against 8 sampled alternatives. The score is a learned club embedding dotted with a player tower, plus named additive player×club terms, so every recommendation decomposes into reasons rather than arriving as a bare number.
+
+**Scope.** The board opens on the newest squads in the snapshot — the players who are under-21 *now*, aged to today rather than to the season they were listed in. Those prospects carry no recorded outcome by construction: their six-season window runs past the cutoff, which is precisely what makes them the ones worth scouting. Switching the scope to past cohorts shows the players whose careers the snapshot can already score, which is where the model's track record is visible rather than its predictions. When a prospect's own outcome is still open, the comparables are drawn only from past players whose careers are resolved, so every neighbour shows what actually happened.
 
 **Progression** projects which calibre of squad list a player first seen at 21 or younger appears on 2 to 6 seasons later, across four classes: no further top-five squad, squad-level club, regular-level club, elite club. Class priors are recalibrated on cohorts the weights never saw. Its output feeds the destination ranker as a feature, which is what lets the ranker treat a highly-rated prospect's options differently from an ordinary mover's.
 

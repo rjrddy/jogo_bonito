@@ -125,6 +125,18 @@ def birth_year(dob):
     return 1900 + year if year >= 40 else 2000 + year
 
 
+def birth_date(dob):
+    """DD-MM-YY to ISO, so a prospect's age can be taken as of today rather than
+    as of the season they were listed in."""
+    match = re.fullmatch(r'(\d{2})-(\d{2})-(\d{2})', dob or '')
+    if not match:
+        return None
+    day, month = int(match.group(1)), int(match.group(2))
+    if not (1 <= day <= 31 and 1 <= month <= 12):
+        return None
+    return f'{birth_year(dob):04d}-{month:02d}-{day:02d}'
+
+
 def slug(name):
     return re.sub(r'[^a-z0-9]+', '-', accent_fold(name).lower()).strip('-')
 
@@ -185,6 +197,7 @@ def build_records(editions, squads, identity):
                           competition=edition['competition'], position=player.get('position') or 'M',
                           nationality=(player.get('nationality') or '').upper() or None,
                           number=number, status=player.get('status') or 'listed', born=born,
+                          birth_date=birth_date(player.get('date_of_birth')),
                           age=edition['year'] - born)
             records.append(record)
             careers[key].append(record)
@@ -669,6 +682,7 @@ def build():
             identity_lookup[record['key']],
             entry['outcome'] if entry and entry.get('outcome') is not None else None,
             edition_lookup.get(entry['peak_edition']) if entry and entry.get('peak_edition') else None,
+            record['birth_date'],
         ])
     print(f'prospect pool: {len(pool)} under-{PROSPECT_MAX_AGE} club seasons, {len(identities)} identities')
 
@@ -822,7 +836,10 @@ def build():
     (OUT / 'prospects.json').write_text(json.dumps(dict(
         version=1, as_of=catalog['as_of'], max_age=PROSPECT_MAX_AGE,
         fields=['name', 'edition', 'age', 'position', 'nationality', 'number', 'years_at_club', 'seasons_seen',
-                'debut_age', 'foreign', 'departed', 'identity', 'outcome', 'peak_edition'],
+                'debut_age', 'foreign', 'departed', 'identity', 'outcome', 'peak_edition', 'birth_date'],
+        current_year=latest_year,
+        note='current_year is the most recent season in the snapshot; its prospects have no recorded outcome '
+             'because their window runs past the cutoff. Ages in rows are ages during that season, not today.',
         editions=edition_list, nation_codes=nation_codes, rows=pool), ensure_ascii=False, separators=(',', ':')))
     for name in ('model.json', 'clubs.json', 'prospects.json'):
         print(f'  dist/scouting/{name}: {(OUT / name).stat().st_size / 1024:.0f} KB')

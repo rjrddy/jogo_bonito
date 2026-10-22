@@ -24,8 +24,21 @@ export function hydrateClubs(file){
  return {list,byId,byClub,byYear,nationCodes:file.nation_codes,as_of:file.as_of};
 }
 
+// A squad list is a snapshot of one season. For scouting, what matters is how
+// old the player is now, so the season age is kept and a current age derived.
+export function ageOn(birthDate,on=new Date()){
+ if(!birthDate)return null;
+ const [y,m,d]=birthDate.split('-').map(Number);
+ if(!y||!m||!d)return null;
+ let age=on.getUTCFullYear()-y;
+ const month=on.getUTCMonth()+1;
+ if(month<m||(month===m&&on.getUTCDate()<d))age--;
+ return age;
+}
+
 export function hydrateProspects(file,clubs){
  const index=Object.fromEntries(file.fields.map((name,i)=>[name,i]));
+ const today=new Date();
  return file.rows.map((row,position)=>({
   index:position,
   name:row[index.name],
@@ -42,6 +55,9 @@ export function hydrateProspects(file,clubs){
   identity:row[index.identity],
   outcome:row[index.outcome],
   peak_edition:row[index.peak_edition]===null?null:file.editions[row[index.peak_edition]],
+  birth_date:row[index.birth_date]??null,
+  age_now:ageOn(row[index.birth_date]??null,today),
+  current:clubs.byId.get(file.editions[row[index.edition]])?.year===file.current_year,
  }));
 }
 
