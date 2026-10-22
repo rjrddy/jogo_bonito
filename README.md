@@ -57,7 +57,7 @@ home = clamp(1.35 × home.attack × away.defense × home_approach.attack × away
 away = clamp(1.35 × away.attack × home.defense × away_approach.attack × home_approach.exposure × venue_factor, 0.15, 4.5)
 ```
 
-Neutral venue factors are 1.0; home advantage uses 1.12 for home and 0.92 for away. These coefficients are explicit heuristic assumptions, not fitted or calibrated results. Cross-league and club/national comparisons assume equal baseline competition strength; no measured cross-competition adjustment is claimed.
+Neutral venue factors are 1.0; home advantage uses 1.12 for home and 0.92 for away. These coefficients were chosen rather than fitted, but they are no longer unmeasured — see [Measured accuracy](#measured-accuracy). Cross-league and club/national comparisons assume equal baseline competition strength; no measured cross-competition adjustment is claimed.
 
 Approach multipliers are explicit experimental assumptions:
 
@@ -69,13 +69,33 @@ Approach multipliers are explicit experimental assumptions:
 | Counterattack | 1.06 | 1.02 |
 | Low block | 0.84 | 0.86 |
 
-Formations affect the suggested selection and pitch layout, not player ability or an additional scoring adjustment. Tactical choices are not fitted coach styles. The scoreline grid sums its 6+ tail buckets to retain all probability mass. Batch experiments sample the same independent Poisson pre-match score distribution without generating full event streams. Sampling frequencies are not held-out model evaluation or measured predictive accuracy.
+Formations affect the suggested selection and pitch layout, not player ability or an additional scoring adjustment. Tactical choices are not fitted coach styles. The scoreline grid sums its 6+ tail buckets to retain all probability mass. Batch experiments sample the same independent Poisson pre-match score distribution without generating full event streams. Sampling frequencies are not held-out model evaluation; the held-out evaluation is [below](#measured-accuracy).
 
 A seeded generator samples shot counts, shot quality, outcomes, pass events and event times. The generated goal rate matches the declared expected-goal rate in Monte Carlo tests. Match outcome estimates sum independent Poisson distributions for remaining goals, conditioned on score and time. The engine ends at 90 minutes: no extra time or shootouts. International input scores can include extra time, so tournament-derived rates are approximations.
 
 **These are hypothetical matches, not historical replays or calibrated forecasts.** Historical squads and recorded coaches are available in the builder. Suggested XIs are based on listed positions and source order, not verified historical starters. Actions are attributed to selected players with positional heuristic weights; their abilities and coaches do not alter the team-level outcome model. Injuries and tactical styles are not modeled. Possession remains a completed-pass-share proxy. Momentum reflects generated attacking events.
 
 Every club edition now has a locally bundled real badge: **192 club identities**, covering **249 historical name variants** across **all 1,660 club editions**. National teams retain their separate fallback behavior. Badges identify the club; a complete year-specific badge design history is not claimed. The badge manifest records each source, asset hash, alias, and edition mapping, and tests reject missing badge coverage.
+
+## Measured accuracy
+
+The scoring model used to ship with no measured predictive accuracy at all. `npm run data:benchmark` now supplies one. Every league edition is split by date: the first 60% of each season fits each contender, the remaining matches are predicted, and no contender sees a match it was fitted on.
+
+On **12,291 held-out matches from 85 league editions**:
+
+| Model | Log loss | Brier | Top pick |
+| --- | --- | --- | --- |
+| **Shipped engine — goal ratios, eight-match prior** | **0.9956** | **0.5938** | 51.6% |
+| Dixon-Coles MLE, fitted per edition | 1.0009 | 0.5966 | 51.5% |
+| Fitted MLE without the low-score correction | 0.9998 | 0.5963 | 51.6% |
+| Training-split home/draw/away frequencies | 1.0681 | 0.6457 | 45.1% |
+| Uniform guess | 1.0986 | 0.6667 | 45.1% |
+
+Lower is better for log loss and Brier. The engine beats both naive baselines by a clear margin, which is the first evidence the project has ever had that its strengths carry real predictive signal.
+
+**The fitted alternative lost.** A Dixon-Coles bivariate Poisson, fitted per edition by maximum likelihood with a low-score correlation correction, predicts *worse* than the goal ratios it was meant to replace. A sweep over regularisation strength and iteration count never closed the gap, and the gap narrowed monotonically as the fit was shrunk harder (+0.0039 log loss at weak shrinkage, +0.0019 at strong). Longer fitting made it worse. At roughly 23 matches per team, maximum likelihood overfits, and the eight-match prior was already doing the regularising that the MLE had to be forced into. The engine was left alone and the losing contender is published next to it in the interface rather than deleted.
+
+What this does **not** measure: cross-era matchups, which are the entire point of the simulator and have no ground truth anywhere in this data; tactical approaches; formations; and anything about venue beyond home advantage. A good score on ordinary league fixtures is not a licence to believe the 2023-versus-2016 numbers.
 
 ## Scout lab
 
@@ -110,6 +130,7 @@ Progression, on 3,285 held-out cohorts: accuracy **50.7%** against 46.8% for alw
 * Cohorts whose window runs past the 2026-10-18 cutoff are left **unlabelled**, not guessed at: 7,974 of 19,076 pool entries have an observable outcome.
 * The progression window deliberately skips the season immediately after the cohort season. Counting it made the target tautological — a teenager on an elite squad list who is listed there again a year later would "reach elite" without progressing. Measured on held-out cohorts, including that season buys 7.7 points of accuracy lift over the majority class but keeps the artifact; skipping two seasons leaves censoring at 59% of the label and only 0.9 points of lift. Skipping one keeps 3.9% of lift with the artifact gone.
 * The ranker is trained on moves only, so it has no fitted opinion on a player staying put; that term keeps a weight of exactly zero and the interface says so.
+* `tests/test_evaluation.py` recovers known attack, defence and home-advantage parameters from synthetic fixtures, so a broken fitter cannot quietly produce the benchmark's numbers, and checks the harness's Python copy of the engine against the constants in `dist/simulator.js`.
 * `tests/scouting.test.mjs` replays 40 prospects and 120 candidate pairs from the Python pipeline through the JavaScript port and fails on any divergence beyond 1e-9. The feature builders exist twice and must agree exactly; a width mismatch raises rather than silently truncating.
 
 ### What the ranker learned
@@ -224,7 +245,7 @@ This unauthenticated API binds only to loopback and is intended for local develo
 
 ## Remaining platform work
 
-Player ability ratings from match data; full transfer dates and manager tenures; real academy and youth-team rosters; minutes, fees and valuations to replace squad-list proxies; calibrated cross-era and cross-competition strengths; training/evaluation with chronological splits; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Original performance and model-quality targets remain unverified.
+Player ability ratings from match data; full transfer dates and manager tenures; real academy and youth-team rosters; minutes, fees and valuations to replace squad-list proxies; calibrated cross-era and cross-competition strengths; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Chronological-split evaluation now exists for the match engine and both scouting models; the original throughput and latency targets remain unverified.
 
 
 ## Club badge assets

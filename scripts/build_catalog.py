@@ -60,12 +60,16 @@ def edition(competition, label, year, season, rows, expected=None):
     return result, coverage
 
 
-def build(as_of='2026-10-18'):
+def league_results(as_of='2026-10-18'):
+    """Yield (code, label, year, season, rows) for every league edition.
+
+    Shared with scripts/build_ratings.py so the fitted ratings and the catalog
+    can never drift onto different parses of the same archives.
+    """
     cutoff = date.fromisoformat(as_of)
     football = zipfile.ZipFile(CACHE / 'football.zip')
     legacy = zipfile.ZipFile(CACHE / 'france.zip')  # upstream redirects to cache.soccerverse
-    teams, coverage = [], []
-    for year in range(2010, cutoff.year+1):
+    for year in range(2010, cutoff.year + 1):
         season = f'{year-1}-{str(year)[2:]}'
         for code, (label, old_code) in LEAGUES.items():
             modern_path = f'football.json-master/{season}/{code}.1.json'
@@ -96,16 +100,23 @@ def build(as_of='2026-10-18'):
                         continue
                     hg, ag = map(int, m['FT'].split('-'))
                     rows.append(dict(date=day, home=clean(m['Team 1']), away=clean(m['Team 2']), hg=hg, ag=ag))
-            count = 18 if code == 'de' or (code == 'fr' and year >= 2024) else 20
-            expected = count*(count-1)
-            if code == 'fr' and year == 2020:
-                expected = 279  # COVID-curtailed official season
-            batch, report = edition(code, label, year, season, rows, expected)
-            teams.extend(batch)
-            if report:
-                coverage.append(report)
-            else:
-                coverage.append(dict(competition=code, label=label, year=year, season=season, teams=0, matches=0, expected_matches=expected, complete=False, last_match=None))
+            yield code, label, year, season, rows
+
+
+def build(as_of='2026-10-18'):
+    cutoff = date.fromisoformat(as_of)
+    teams, coverage = [], []
+    for code, label, year, season, rows in league_results(as_of):
+        count = 18 if code == 'de' or (code == 'fr' and year >= 2024) else 20
+        expected = count*(count-1)
+        if code == 'fr' and year == 2020:
+            expected = 279  # COVID-curtailed official season
+        batch, report = edition(code, label, year, season, rows, expected)
+        teams.extend(batch)
+        if report:
+            coverage.append(report)
+        else:
+            coverage.append(dict(competition=code, label=label, year=year, season=season, teams=0, matches=0, expected_matches=expected, complete=False, last_match=None))
     groups = defaultdict(list)
     for m in csv.DictReader((CACHE / 'international.csv').open()):
         if m['tournament'] not in TOURNAMENTS or not '2010-01-01' <= m['date'] <= as_of or not m['home_score'] or not m['away_score']:

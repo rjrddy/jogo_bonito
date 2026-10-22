@@ -45,7 +45,36 @@ function setPlaying(value){playing=value;text('play',value?'Ⅱ':'▶');$('play'
 function frame(now){if(playing&&last){minute=Math.min(90,minute+(now-last)/1000*Number($('speed').value)/3);if(now-lastPaint>120||minute>=90){render();lastPaint=now;}if(minute>=90)setPlaying(false);}last=now;requestAnimationFrame(frame);}
 function seek(value){if(!match)return;setPlaying(false);minute=Math.max(0,Math.min(90,Number(value)));render();}
 $('play').onclick=()=>{if(!match)return;if(minute>=90)minute=0;setPlaying(!playing);render();};$('reset').onclick=()=>{minute=0;setPlaying(false);render();};$('timeline').oninput=e=>{minute=Number(e.target.value);text('shot-detail','Select a shot to inspect its quality and outcome.');render();};$('shot-filter').onchange=render;$('event-filter').onchange=render;
-function changeView(next){view=next;if(next!=='overview'){$('fixture-builder').hidden=true;$('toggle-builder').setAttribute('aria-expanded','false');text('toggle-builder','Edit fixture ＋');}document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el.dataset.view===view));text('breadcrumb',({overview:'Matchroom',lineups:'Team sheets',forecast:'Forecast lab',report:'Match report',scout:'Scout lab',notebook:'Notebook',about:'Data & method'})[view]||'Matchroom');$('match-shell').hidden=['notebook','about','scout'].includes(view);$('dashboard').hidden=view!=='overview';$('events-section').hidden=view!=='report';$('about').hidden=view!=='about';lab?.showView(view);if(view==='scout')scout?.show();const url=new URL(location.href);if(view==='overview')url.searchParams.delete('view');else url.searchParams.set('view',view);history.replaceState(null,'',url);}
+// The benchmark is a small file and only the Data & method view needs it.
+let benchmarkLoaded=false;
+async function showBenchmark(){
+ if(benchmarkLoaded)return;
+ benchmarkLoaded=true;
+ try{
+  const response=await fetch('./benchmark.json');
+  if(!response.ok)throw new Error('Benchmark unavailable in this deployment.');
+  const data=await response.json();
+  const shipped=data.models.find(m=>m.key===data.shipped);
+  const beaten=data.models.filter(m=>m.key!==data.shipped&&m.logloss>shipped.logloss).length;
+  text('benchmark-intro',`The shipped engine was scored against ${data.models.length-1} alternatives on `
+   +`${data.matches.toLocaleString()} held-out matches from ${data.editions} league editions. Each season is split by date: `
+   +`the first ${Math.round(data.train_share*100)}% fits every contender, the rest is predicted. It wins on `
+   +`${beaten} of ${data.models.length-1}, and the model with the best held-out log loss is `
+   +`"${data.models.find(m=>m.key===data.best).label}".`);
+  const body=$('benchmark-table');body.replaceChildren();
+  for(const model of data.models){
+   const row=document.createElement('tr');
+   if(model.key===data.shipped)row.className='model-row';
+   for(const value of [model.label+(model.key===data.shipped?' — in use':''),
+    model.logloss.toFixed(4),model.brier.toFixed(4),(model.accuracy*100).toFixed(1)+'%']){
+    const cell=document.createElement('td');cell.textContent=value;row.append(cell);
+   }
+   body.append(row);
+  }
+  text('benchmark-caveats','Lower log loss and Brier are better. '+data.caveats.join(' '));
+ }catch(e){text('benchmark-intro',e.message);benchmarkLoaded=false;}
+}
+function changeView(next){view=next;if(next!=='overview'){$('fixture-builder').hidden=true;$('toggle-builder').setAttribute('aria-expanded','false');text('toggle-builder','Edit fixture ＋');}document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el.dataset.view===view));text('breadcrumb',({overview:'Matchroom',lineups:'Team sheets',forecast:'Forecast lab',report:'Match report',scout:'Scout lab',notebook:'Notebook',about:'Data & method'})[view]||'Matchroom');$('match-shell').hidden=['notebook','about','scout'].includes(view);$('dashboard').hidden=view!=='overview';$('events-section').hidden=view!=='report';$('about').hidden=view!=='about';lab?.showView(view);if(view==='scout')scout?.show();if(view==='about')showBenchmark();const url=new URL(location.href);if(view==='overview')url.searchParams.delete('view');else url.searchParams.set('view',view);history.replaceState(null,'',url);}
 document.querySelectorAll('.nav').forEach(el=>el.onclick=()=>changeView(el.dataset.view));$('help').onclick=()=>changeView('about');
 const competitions=[['en','Premier League'],['es','La Liga'],['de','Bundesliga'],['it','Serie A'],['fr','Ligue 1'],['wc','World Cup'],['euros','Euros'],['copa','Copa América']];
 function option(value,label){return Object.assign(document.createElement('option'),{value:String(value),textContent:label});}
