@@ -125,6 +125,28 @@ def birth_year(dob):
     return 1900 + year if year >= 40 else 2000 + year
 
 
+# Records where the upstream squad page is demonstrably wrong and the correct
+# value is externally verifiable. Kept deliberately tiny and explicit: the
+# source value is preserved in the output so the edit is auditable, and
+# tests/test_data_audit.py fails if an entry ever stops applying, so a silent
+# upstream fix cannot leave a stale override behind.
+SOURCE_CORRECTIONS = {
+    ('fr-2025-as-saint-tienne', 'Benjamin Bouchouari'): dict(
+        date_of_birth='13-11-01', was='13-11-11',
+        why='Source reads 2011, which would make a squad-number-6 Ligue 1 midfielder 14. Born 13 Nov 2001.'),
+}
+corrections_applied = Counter()
+
+
+def corrected(edition_id, player):
+    """Apply a verified correction, recording that it fired."""
+    fix = SOURCE_CORRECTIONS.get((edition_id, player.get('name')))
+    if not fix or player.get('date_of_birth') != fix['was']:
+        return player.get('date_of_birth')
+    corrections_applied[(edition_id, player['name'])] += 1
+    return fix['date_of_birth']
+
+
 def birth_date(dob):
     """DD-MM-YY to ISO, so a prospect's age can be taken as of today rather than
     as of the season they were listed in."""
@@ -185,7 +207,8 @@ def build_records(editions, squads, identity):
     for edition_id, squad in squads.items():
         edition = editions[edition_id]
         for player in squad['players']:
-            born = birth_year(player.get('date_of_birth'))
+            dob = corrected(edition_id, player)
+            born = birth_year(dob)
             if born is None:
                 continue
             key = identity_key(player['name'], born)
@@ -197,7 +220,7 @@ def build_records(editions, squads, identity):
                           competition=edition['competition'], position=player.get('position') or 'M',
                           nationality=(player.get('nationality') or '').upper() or None,
                           number=number, status=player.get('status') or 'listed', born=born,
-                          birth_date=birth_date(player.get('date_of_birth')),
+                          birth_date=birth_date(dob),
                           age=edition['year'] - born)
             records.append(record)
             careers[key].append(record)
@@ -217,7 +240,7 @@ def edition_profiles(editions, squads, identity, by_club):
         ages = []
         nations, positions = Counter(), Counter()
         for player in listed:
-            born = birth_year(player.get('date_of_birth'))
+            born = birth_year(corrected(edition_id, player))
             if born is not None:
                 ages.append(edition['year'] - born)
             nations[(player.get('nationality') or '').upper()] += 1
@@ -229,8 +252,9 @@ def edition_profiles(editions, squads, identity, by_club):
             youth_rate=(sum(1 for a in ages if a <= PROSPECT_MAX_AGE) / len(ages)) if ages else 0.0,
             mean_age=(sum(ages) / len(ages)) if ages else 0.0,
             foreign_share=(sum(n for code, n in nations.items() if code not in home) / len(listed)) if listed else 0.0,
-            ids={p['id'] for p in listed}, keys={identity_key(p['name'], birth_year(p.get('date_of_birth')))
-                                                for p in listed if birth_year(p.get('date_of_birth'))})
+            ids={p['id'] for p in listed},
+            keys={identity_key(p['name'], birth_year(corrected(edition_id, p)))
+                  for p in listed if birth_year(corrected(edition_id, p))})
     for edition_id, profile in profiles.items():
         previous = by_club[identity[edition_id]].get(editions[edition_id]['year'] - 1)
         before = profiles.get(previous)
@@ -823,6 +847,8 @@ def build():
                          tier_cuts=[round(c, 6) for c in cuts], metrics=progression_metrics),
         archetypes=archetypes, fixtures=fixtures,
         nations=dict(sorted(nation_pool.items())),
+        source_corrections=[dict(edition=edition, player=name, **{k: v for k, v in fix.items()})
+                            for (edition, name), fix in sorted(SOURCE_CORRECTIONS.items())],
         regions={code: REGIONS[code] for code in sorted(nation_pool) if code in REGIONS},
         flags=flag_assets(sorted(nation_pool)),
         pool=dict(size=len(pool), identities=len(identities), max_age=PROSPECT_MAX_AGE,
