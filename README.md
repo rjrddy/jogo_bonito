@@ -1,6 +1,6 @@
 # Jogo Bonito · The Match Lab
 
-A historical football matchup simulator. Play **2023 Manchester City vs 2016 Real Madrid**, **2012 Spain vs 2022 Argentina**, or any pair of supported team editions, including club-versus-country experiments.
+A historical football matchup simulator. It opens on **Manchester City vs Liverpool, 2022/23**; from there play **2023 Manchester City vs 2016 Real Madrid**, **2012 Spain vs 2022 Argentina**, or any pair of supported team editions, including club-versus-country experiments.
 
 ## Run
 
