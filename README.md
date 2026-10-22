@@ -21,7 +21,7 @@ The interface now has dedicated workspaces:
 | --- | --- |
 | Matchroom | Badge-led fixture cards, independent eras, side swapping, random fixtures, venue settings, seed controls, replay, shot maps, xG and momentum |
 | Team sheets | Six formation boards, selectable real XIs, recorded coaches, and historical team comparisons |
-| Scout lab | The current crop of under-21 players, aged to today, projected and matched to club editions by two offline-trained models; scope switches to past cohorts to check the track record, plus a form for prospects the data has never seen |
+| Scout lab | The current crop of under-21 players, aged to today, projected and matched to club editions by two offline-trained models; recruit in reverse by ranking the pool for one club; scope switches to past cohorts to check the track record, plus a form for prospects the data has never seen |
 | Forecast lab | Exact 7×7 scoreline probability grid, both-teams-score/over-2.5 estimates, and seeded batches of 100, 1,000 or 10,000 scorelines |
 | Match report | Player goals, shots, xG, passes and completion; search, side filters and sorting; key moments and event rows that seek the replay |
 | Notebook | Up to 20 named saved fixtures and the last 10 completed results, stored only in this browser |
@@ -77,6 +77,14 @@ A seeded generator samples shot counts, shot quality, outcomes, pass events and 
 
 Every club edition now has a locally bundled real badge: **192 club identities**, covering **249 historical name variants** across **all 1,660 club editions**. National teams retain their separate fallback behavior. Badges identify the club; a complete year-specific badge design history is not claimed. The badge manifest records each source, asset hash, alias, and edition mapping, and tests reject missing badge coverage.
 
+## Data audit
+
+`tests/test_data_audit.py` checks that the data is right, not merely self-consistent. Twelve final league tables are asserted against the real seasons goal for goal, eight well-known players against their real birth dates, and goals scored must balance goals conceded inside every league edition. The derived scouting files are held to the contracts they document: `profile_source`, `profile_fallback` and `turnover` across all 1,660 club editions, nationality counts totalling the squad they describe, and recorded outcomes agreeing with the tier cuts they were assigned from.
+
+Two findings are worth stating. Values that look like parsing accidents and are not — Essam El-Hadary playing a World Cup at 45, Pietro Pellegri debuting for Genoa at 15, Augsburg listing their 50-year-old goalkeeping coach as an emergency keeper — are pinned in `VERIFIED_EXTREMES` with the reason, so nobody "fixes" them later. The 361 names shared across different birth years are namesakes rather than collisions; there really are two Aaron Ramseys and two Ali Karimis, and keying identity on name plus birth year is what keeps them apart.
+
+Exactly one record was wrong: the source dates Benjamin Bouchouari to 2011, which put a squad-number-6 Ligue 1 midfielder into the prospect pool as a 14-year-old. `SOURCE_CORRECTIONS` in `scripts/build_scouting.py` carries that single fix with its reason and the original value, publishes it in `model.json` rather than applying it invisibly, and a test fails if the entry ever stops matching upstream, so a stale override cannot survive a source change.
+
 ## Measured accuracy
 
 The scoring model used to ship with no measured predictive accuracy at all. `npm run data:benchmark` now supplies one. Every league edition is split by date: the first 60% of each season fits each contender, the remaining matches are predicted, and no contender sees a match it was fitted on.
@@ -104,6 +112,8 @@ Two supervised models, fitted offline by `scripts/build_scouting.py` from this r
 Both are named for what the squad data can actually witness, which is narrower than the word "scouting" suggests. Read the limits below before trusting a number.
 
 **Destination ranking** predicts which club a player moves to next. The snapshots record **8,412 club-to-club moves**; 5,327 of them train the weights and the 3,085 later ones are held back. Training is a sampled softmax over one true destination against 8 sampled alternatives. The score is a learned club embedding dotted with a player tower, plus named additive player×club terms, so every recommendation decomposes into reasons rather than arriving as a bare number.
+
+**Recruiting in reverse.** The player view answers "where does this prospect fit"; the club view answers the question a recruitment desk actually asks, "who fits us". Pick a club edition and the same ranker is held fixed at that destination and run across the pool, alongside the squad shape it is reasoning about: how many bodies the club carries per position against the share of an eleven that position normally takes, its mean age, its under-21 share and its overseas share, all read from the season before. Because the destination is fixed, most of the scoring terms are identical for everyone on the shortlist and describe the club rather than the player, so the reasons shown are filtered to the terms that actually differ between candidates.
 
 **Scope.** The board opens on the newest squads in the snapshot — the players who are under-21 *now*, aged to today rather than to the season they were listed in. Those prospects carry no recorded outcome by construction: their six-season window runs past the cutoff, which is precisely what makes them the ones worth scouting. Switching the scope to past cohorts shows the players whose careers the snapshot can already score, which is where the model's track record is visible rather than its predictions. When a prospect's own outcome is still open, the comparables are drawn only from past players whose careers are resolved, so every neighbour shows what actually happened.
 

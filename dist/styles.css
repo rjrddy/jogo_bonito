@@ -141,3 +141,13 @@ span.scout-crest{display:inline-flex;align-items:center;justify-content:center;w
  .outcome-row{grid-template-columns:1fr 2fr 42px;gap:8px}
  .scout-current-club{border-left:0;padding-left:0}
 }
+
+/* Recruit-for-a-club view: squad shape and the ranked pool for one destination. */
+.club-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;background:var(--rule);margin:14px 0 0}
+.club-summary>div{background:var(--paper);padding:11px 12px}
+.club-summary span{display:block;font:8px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.club-summary strong{display:block;margin-top:5px;font:600 16px var(--condensed)}
+.club-shape{display:grid;gap:6px;margin:16px 0 0}
+.club-shape-row{display:grid;grid-template-columns:minmax(84px,1fr) 2.4fr auto;gap:11px;align-items:center;font-size:11px}
+.club-shape-row strong{font:600 12px var(--condensed);white-space:nowrap}
+@media(prefers-color-scheme:dark){.club-summary>div{background:var(--surface)}}

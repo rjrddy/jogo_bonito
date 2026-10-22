@@ -1,5 +1,5 @@
 import {playerVector,progression,rankClubs,latentPlayer,archetypeOf,similarTo,REASONS,
-        POSITION_NAMES,COMPETITION_NAMES} from './scouting-engine.js';
+        fitScore,explain,POSITION_SHARE,POSITION_NAMES,COMPETITION_NAMES} from './scouting-engine.js';
 import {hydrateClubs,hydrateProspects,prospectRecord,ageOn} from './scout-data.js';
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;};
@@ -69,6 +69,7 @@ export function createScout({openInMatchroom,notify}){
   refreshWatchButton=()=>{watch.textContent=`☆ Watchlist (${readWatchlist().length})`;watch.classList.toggle('active',watchOnly);};
   refreshWatchButton();
   buildCustomForm();
+  buildClubForm();
   renderModelCard();
  }
 
@@ -487,6 +488,148 @@ export function createScout({openInMatchroom,notify}){
   root.append(limits);
  }
 
+
+ // ---- Recruit for a club: the same ranker, held fixed at one destination.
+ function buildClubForm(){
+  const search=$('cn-search'),select=$('cn-club');
+  function populate(){
+   const query=search.value.trim().toLocaleLowerCase();
+   const matches=clubs.list
+    .filter(club=>!query||club.name.toLocaleLowerCase().includes(query))
+    .sort((a,b)=>(b.year-a.year)||a.name.localeCompare(b.name))
+    .slice(0,80);
+   select.replaceChildren(...matches.map(club=>Object.assign(document.createElement('option'),
+    {value:club.id,textContent:`${club.name} ${club.year} · ${COMPETITION_NAMES[club.competition]}`})));
+   if(!matches.length)select.append(Object.assign(document.createElement('option'),{value:'',textContent:'No club matches'}));
+  }
+  search.oninput=()=>{populate();renderClubNeeds();};
+  populate();
+  // Open on a current-season club so the default view is a live squad.
+  const current=clubs.list.find(c=>c.year===currentYear);
+  if(current)select.value=current.id;
+  for(const id of ['cn-club','cn-position','cn-scope','cn-age','cn-sort'])
+   $(id).addEventListener('change',renderClubNeeds);
+ }
+
+ // Positions carrying fewer than their share of an eleven, worst first.
+ function squadNeeds(club){
+  const squad=Math.max(1,club.squad_size||1);
+  return Object.keys(POSITION_SHARE)
+   .map(group=>({group,share:(club.position_counts[group]||0)/squad,
+                 deficit:POSITION_SHARE[group]-(club.position_counts[group]||0)/squad}))
+   .sort((a,b)=>b.deficit-a.deficit);
+ }
+
+ function renderClubNeeds(){
+  if(!model)return;
+  const club=clubs.byId.get($('cn-club').value);
+  const root=$('cn-report'),panel=$('cn-squad');
+  panel.replaceChildren();root.replaceChildren();
+  if(!club){root.append(el('p','empty-state','Choose a club edition.'));return;}
+
+  const needs=squadNeeds(club);
+  const summary=el('div','club-summary');
+  for(const [label,value] of [
+   ['Squad listed',String(club.squad_size)],
+   ['Mean age',club.mean_age?club.mean_age.toFixed(1):'—'],
+   ['Under-21 share',pct(club.youth_rate)],
+   ['Overseas share',pct(club.foreign_share)],
+  ]){const cell=el('div');cell.append(el('span','',label),el('strong','',value));summary.append(cell);}
+  panel.append(summary);
+  const shape=el('div','club-shape');
+  for(const need of Object.keys(POSITION_SHARE).map(g=>needs.find(n=>n.group===g))){
+   const row=el('div','club-shape-row');
+   const track=el('span','outcome-track');
+   const fill=el('b');fill.style.width=Math.min(100,need.share/POSITION_SHARE[need.group]*50).toFixed(1)+'%';
+   track.append(fill);
+   row.append(el('span','outcome-label',POSITION_NAMES[need.group]),track,
+    el('strong','',(club.position_counts[need.group]||0)+(need.deficit>0.02?' · thin':'')));
+   shape.append(row);
+  }
+  panel.append(shape);
+  panel.append(el('p','lab-footnote',
+   `Squad shape describes ${club.profile_source}, the season before this one, which is what the ranker sees. `
+   +`A bar at the halfway mark is the share of an eleven that position would normally take.`));
+
+  // Rank the pool at this fixed destination.
+  const wanted=$('cn-position').value;
+  const groups=wanted==='need'?needs.filter(n=>n.deficit>0).slice(0,2).map(n=>n.group):null;
+  const scope=$('cn-scope').value,maxAge=Number($('cn-age').value),sort=$('cn-sort').value;
+  const rows=[];
+  for(const prospect of pool){
+   if(scope==='current'&&!prospect.current)continue;
+   if((prospect.age_now??prospect.age)>maxAge)continue;
+   if(groups&&!groups.includes(prospect.position))continue;
+   if(wanted!=='need'&&wanted!=='all'&&prospect.position!==wanted)continue;
+   const origin=clubs.byId.get(prospect.edition);
+   if(origin.club===club.club)continue; // already there
+   const record=prospectRecord(prospect);
+   const result=fitScore(record,origin,club,model,latents[prospect.index]);
+   rows.push({prospect,origin,score:result.score,result});
+  }
+  rows.sort(sort==='elite'
+   ?(a,b)=>elite[b.prospect.index]-elite[a.prospect.index]||b.score-a.score
+   :(a,b)=>b.score-a.score);
+
+  const head=el('div','scout-report-head');
+  const identity=el('div','scout-identity');
+  identity.append(el('h3','',club.name));
+  identity.append(el('p','scout-identity-meta',
+   `${COMPETITION_NAMES[club.competition]} ${club.year} · ranking ${rows.length.toLocaleString()} prospects`
+   +(groups?` · thinnest: ${groups.map(g=>POSITION_NAMES[g].toLowerCase()).join(' and ')}`:'')));
+  head.append(identity);
+  const image=crest(club,40);head.append(image);
+  root.append(head);
+
+  if(!rows.length){root.append(el('p','empty-state','No prospect matches these filters.'));return;}
+  const list=el('div','scout-block');
+  list.append(el('h4','','Prospects the ranker places here'));
+  list.append(el('p','scout-block-note',
+   'Scored with the same model the player view uses, held fixed at this destination. Reasons show only the '
+   +'terms that differ across this shortlist, since the rest describe the club and are identical for everyone '
+   +'on it. The ranker is trained on where players were actually recorded moving, so this reads the '
+   +'recruitment market for a club of this profile, not a judgement that the club should sign them.'));
+  const shortlist=rows.slice(0,15).map(row=>({...row,parts:explain(row.result,model)}));
+  // Held at one destination, most terms are identical for everyone on the list:
+  // they explain the club, not the player. Show only what separates them.
+  const spread=new Map();
+  for(const row of shortlist)for(const part of row.parts){
+   const seen=spread.get(part.key)||new Set();
+   seen.add(part.contribution.toFixed(4));
+   spread.set(part.key,seen);
+  }
+  const varying=new Set([...spread].filter(([,values])=>values.size>1).map(([key])=>key));
+  for(const row of shortlist){
+   const article=el('article','fit-row');
+   article.append(flag(row.prospect.nationality));
+   const body=el('div','fit-body');
+   const title=el('div','fit-head');
+   title.append(el('strong','',row.prospect.name),
+    el('span','',`${POSITION_NAMES[row.prospect.position]} · ${row.origin.name} ${row.origin.year} · `
+     +`${row.prospect.age_now??row.prospect.age}`));
+   body.append(title);
+   const reasons=el('div','fit-reasons');
+   const distinct=row.parts.filter(part=>varying.has(part.key));
+   for(const part of (distinct.length?distinct:row.parts).slice(0,3)){
+    const chip=el('span','fit-reason'+(part.contribution>0?' positive':' negative'));
+    chip.append(el('b','',part.label),el('i','',(part.contribution>0?'+':'')+part.contribution.toFixed(2)));
+    reasons.append(chip);
+   }
+   body.append(reasons);
+   const score=el('div','fit-share');
+   score.append(el('strong','',pct(elite[row.prospect.index])),el('small','','elite projection'));
+   const open=el('button','outline','Report ↗');
+   open.onclick=()=>{selected=row.prospect;setMode('board');renderBoard();
+    renderReport(row.prospect,$('scout-report'));$('scout-report').scrollIntoView({block:'start'});};
+   article.append(body,score,open);
+   list.append(article);
+  }
+  root.append(list);
+  root.append(el('p','lab-footnote',
+   `Showing the top 15 of ${rows.length.toLocaleString()}. Prospects already at this club are left out. `
+   +`Elite projection is the progression model's own output and does not depend on the club chosen here.`));
+ }
+
  function setMode(next){
   mode=next;
   for(const button of document.querySelectorAll('.scout-mode')){
@@ -496,7 +639,9 @@ export function createScout({openInMatchroom,notify}){
   }
   $('scout-board').hidden=next!=='board';
   $('scout-custom').hidden=next!=='custom';
+  $('scout-club').hidden=next!=='club';
   $('scout-model').hidden=next!=='model';
+  if(next==='club')renderClubNeeds();
  }
 
  async function show(){

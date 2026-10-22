@@ -66,7 +66,10 @@ class Element{
  get firstChild(){return this.children[0]||null;}
 }
 const registry=new Map();
-const modeButtons=['board','custom','model'].map(mode=>{
+// Read the modes out of the markup so a new tab cannot be left untested.
+const declaredModes=[...html.matchAll(/class="scout-mode[^"]*"[^>]*data-mode="(\w+)"/g)].map(m=>m[1]);
+assert.ok(declaredModes.length>=3,'index.html must declare the scout modes');
+const modeButtons=declaredModes.map(mode=>{
  const button=new Element('button');button.dataset.mode=mode;return button;
 });
 globalThis.document={
@@ -236,6 +239,39 @@ $('cp-club').value=$('cp-club').children[0].value;
 $('cp-run').onclick();
 assert.equal($('cp-error').hidden,true,'a real club reference must score: '+$('cp-error').textContent);
 console.log('Custom intake: band and club references both score, bad age and bad nationality both refused.');
+
+// ---- 5b. Recruiting for a club ranks the pool at one fixed destination.
+for(const button of modeButtons)if(button.dataset.mode==='club')button.onclick();
+assert.equal($('scout-club').hidden,false);
+assert.ok($('cn-club').children.length>0,'the club picker must be populated');
+const chosen=clubFile.clubs.find(c=>c.id===$('cn-club').value);
+assert.ok(chosen,'a club edition must be preselected');
+assert.equal(chosen.year,prospectFile.current_year,'it should open on a current squad');
+const clubText=$('cn-report').textContent;
+assert.ok(clubText.includes(chosen.name),'the report must name the club');
+const squadText=$('cn-squad').textContent;
+for(const fragment of ['Squad listed','Mean age','Under-21 share','Goalkeeper','Forward'])
+ assert.ok(squadText.includes(fragment),`squad shape is missing "${fragment}"`);
+const ranked=[];
+(function collect(node){for(const child of node.children||[]){
+ if(typeof child!=='object'||!child)continue;
+ if(String(child.className||'').split(/\s+/).includes('fit-row'))ranked.push(child);
+ collect(child);}})($('cn-report'));
+assert.ok(ranked.length>0&&ranked.length<=15,`expected a capped shortlist, got ${ranked.length}`);
+// Nobody already at the club should be offered to it.
+for(const row of ranked)assert.ok(!row.textContent.includes(` ${chosen.name} ${chosen.year} `),
+ 'a prospect already at the club must not be recommended to it');
+// Narrowing to one position must actually narrow it.
+$('cn-position').value='G';$('cn-position').onchange();
+const keepers=[];
+(function collect(node){for(const child of node.children||[]){
+ if(typeof child!=='object'||!child)continue;
+ if(String(child.className||'').split(/\s+/).includes('fit-row'))keepers.push(child);
+ collect(child);}})($('cn-report'));
+assert.ok(keepers.length>0,'a goalkeeper shortlist must still return players');
+for(const row of keepers)assert.ok(row.textContent.includes('Goalkeeper'),'position filter must hold');
+$('cn-position').value='need';$('cn-position').onchange();
+console.log(`Club recruitment: ${chosen.name} ${chosen.year} squad shape rendered, ${ranked.length} prospects ranked at a fixed destination.`);
 
 // ---- 6. The model card publishes the held-out numbers, not just the method.
 for(const button of modeButtons)if(button.dataset.mode==='model')button.onclick();
