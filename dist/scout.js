@@ -158,7 +158,7 @@ export function createScout({openInMatchroom,notify}){
    card.onclick=()=>{selected=prospect;renderBoard();renderReport(prospect,$('scout-report'));};
    root.append(card);
   }
-  if(rows.length>150)root.append(el('p','lab-footnote',`Showing the first 150 of ${rows.length.toLocaleString()}. Narrow the filters to see further down the list.`));
+  if(rows.length>150)root.append(el('p','lab-footnote',`First 150 of ${rows.length.toLocaleString()}. Narrow the filters to see further.`));
  }
 
  // ---- Fit ranking, shared by the board and the custom form
