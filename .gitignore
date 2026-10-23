@@ -5,3 +5,6 @@ node_modules/
 .DS_Store
 
 .vercel/
+
+# Local screenshot harness, served from dist/ by the dev server
+dist/__shot.html

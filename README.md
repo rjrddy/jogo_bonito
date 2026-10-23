@@ -1,273 +1,60 @@
-# Jogo Bonito · The Match Lab
+# Jogo Bonito
 
-A historical football matchup simulator. It opens on **Manchester City vs Liverpool, 2022/23**; from there play **2023 Manchester City vs 2016 Real Madrid**, **2012 Spain vs 2022 Argentina**, or any pair of supported team editions, including club-versus-country experiments.
+A football match simulator and scouting workbench built on 31,412 real results and 2,002 historical squads, running entirely in the browser.
+
+![The Matchroom](docs/screenshots/matchroom.png)
+
+**[jogo-bonito-gamma.vercel.app](https://jogo-bonito-gamma.vercel.app)**
+
+Pick any two team editions from 2010–2026 — Manchester City 2023 against Real Madrid 2016, Spain 2012 against Argentina 2022 — choose formations, approach and venue, and replay the result minute by minute. The Scout lab ranks current under-21 players against the clubs they fit, using two models trained on the repository's own data.
 
 ## Run
 
-Requires Python 3.10+. No runtime dependencies, API keys, or paid feeds.
+Requires Python 3.10+. No dependencies, API keys or paid feeds.
 
 ```sh
-python3 server.py
-# Open http://127.0.0.1:8000
+python3 server.py        # http://127.0.0.1:8000
+npm test                 # Python and JavaScript suites
 ```
 
-The simulator also runs on static hosting: serve `dist/` over HTTP. Its catalog and match engine are bundled, with no third-party data requests at runtime. Google Fonts is optional; local font fallbacks are defined.
+`dist/` is a static site: serve it over HTTP and everything works, including the models.
 
-## The Match Lab
+## How it works
 
-The interface now has dedicated workspaces:
+Each team edition gets an attack and defence rating from its real goals scored and conceded, normalised against that competition's scoring average, with an eight-match prior pulling small samples toward the mean. Two ratings combine with a venue factor and a tactical multiplier into expected goals for each side, and a seeded generator samples shots, shot quality and passes from there. The same seed always reproduces the same match.
 
-| Workspace | Features |
-| --- | --- |
-| Matchroom | Badge-led fixture cards, independent eras, side swapping, random fixtures, venue settings, seed controls, replay, shot maps, xG and momentum |
-| Team sheets | Six formation boards, selectable real XIs, recorded coaches, and historical team comparisons |
-| Scout lab | The current crop of under-21 players, aged to today, projected and matched to club editions by two offline-trained models; recruit in reverse by ranking the pool for one club; scope switches to past cohorts to check the track record, plus a form for prospects the data has never seen |
-| Forecast lab | Exact 7×7 scoreline probability grid, both-teams-score/over-2.5 estimates, and seeded batches of 100, 1,000 or 10,000 scorelines |
-| Match report | Player goals, shots, xG, passes and completion; search, side filters and sorting; key moments and event rows that seek the replay |
-| Notebook | Up to 20 named saved fixtures and the last 10 completed results, stored only in this browser |
-| Data & method | Result/squad provenance, coverage and model assumptions |
+The Scout lab adds two supervised models, fitted offline by `scripts/build_scouting.py` and run in the browser from exported weights. A ranker predicts which club a player moves to next, trained on 5,327 observed club-to-club moves. A classifier projects which calibre of squad a player first seen at 21 or younger appears on two to six seasons later. Both are validated on a forward split in time.
 
-**Match setup:** choose the competition, edition and team for each side. Choose formations and approaches, inspect or edit each XI, select the venue and seed, then **Simulate match**. A visible pending-changes label distinguishes edited setup from the running simulation. **Swap sides** preserves each XI and game plan while swapping the teams. **Shuffle fixture** samples another pair of historical editions. The setup can be collapsed during analysis.
+Full detail in [docs/methodology.md](docs/methodology.md).
 
-**Replay:** play/pause, restart, seek, change speed, skip to full time or jump to the previous/next chance. Space toggles playback and left/right arrows seek five match minutes when focus is outside a control. Player ledgers, highlights and event tables reflect the current replay prefix. Charts and tables refresh at a capped cadence during playback.
+## Evaluation
 
-**Keep and share:** share links include both editions, selected XIs, formations, tactical choices, venue and seed. A `?view=` parameter opens a specific workspace directly, so `?view=scout` links straight to the Scout lab. CSV exports include the current event prefix and configuration metadata. JSON exports contain the full simulated match, event list, XIs and configuration. Reproduction assumes the same model version and data snapshot. Notebook storage is local to the browser; it is not a cloud account. Storage failure is handled with a visible message and sharing/export remains available.
-
-**Year convention:** club editions use the season-ending year. City 2023 = 2022/23; Madrid 2016 = 2015/16. National editions use tournament years; Euro 2020 appears as `2020 / played 2021`, with internal year 2021. These are men's senior teams.
-
-## Actual coverage
-
-The bundled catalog contains **2,002 team editions**, **100 competition editions**, and **31,412 historical source results**, with a cutoff of **2026-10-18**:
-
-| Competition | Editions |
-| --- | --- |
-| Premier League, La Liga, Bundesliga, Serie A, Ligue 1 | Every team, each season ending 2010–2026 |
-| World Cup | 2010, 2014, 2018, 2022, 2026 |
-| Euros | 2012, 2016, 2020 (played 2021), 2024 |
-| Copa América | 2011, 2015, 2016, 2019, 2021, 2024 |
-
-All team memberships are present. Three club editions have partial results in the source: La Liga 2024/25 (370/380), Serie A 2024/25 (370/380), Ligue 1 2025/26 (305/306). The builder labels these editions and the Methodology view exposes every competition's team count, match count and completeness. Ligue 1 2019/20 uses its officially curtailed 279-match season. The ongoing 2026/27 club season is not included; it has not finished.
-
-## Simulation model
-
-Real goals scored/conceded are normalized by each edition's competition scoring average. An eight-match prior pulls small samples toward the competition mean. Expected 90-minute goals use:
-
-```text
-home = clamp(1.35 × home.attack × away.defense × home_approach.attack × away_approach.exposure × venue_factor, 0.15, 4.5)
-away = clamp(1.35 × away.attack × home.defense × away_approach.attack × home_approach.exposure × venue_factor, 0.15, 4.5)
-```
-
-Neutral venue factors are 1.0; home advantage uses 1.12 for home and 0.92 for away. These coefficients were chosen rather than fitted, but they are no longer unmeasured — see [Measured accuracy](#measured-accuracy). Cross-league and club/national comparisons assume equal baseline competition strength; no measured cross-competition adjustment is claimed.
-
-Approach multipliers are explicit experimental assumptions:
-
-| Approach | Own attacking multiplier | Exposure to opponent |
-| --- | --- | --- |
-| Balanced | 1.00 | 1.00 |
-| Keep the ball | 1.04 | 0.96 |
-| High press | 1.12 | 1.10 |
-| Counterattack | 1.06 | 1.02 |
-| Low block | 0.84 | 0.86 |
-
-Formations affect the suggested selection and pitch layout, not player ability or an additional scoring adjustment. Tactical choices are not fitted coach styles. The scoreline grid sums its 6+ tail buckets to retain all probability mass. Batch experiments sample the same independent Poisson pre-match score distribution without generating full event streams. Sampling frequencies are not held-out model evaluation; the held-out evaluation is [below](#measured-accuracy).
-
-A seeded generator samples shot counts, shot quality, outcomes, pass events and event times. The generated goal rate matches the declared expected-goal rate in Monte Carlo tests. Match outcome estimates sum independent Poisson distributions for remaining goals, conditioned on score and time. The engine ends at 90 minutes: no extra time or shootouts. International input scores can include extra time, so tournament-derived rates are approximations.
-
-**These are hypothetical matches, not historical replays or calibrated forecasts.** Historical squads and recorded coaches are available in the builder. Suggested XIs are based on listed positions and source order, not verified historical starters. Actions are attributed to selected players with positional heuristic weights; their abilities and coaches do not alter the team-level outcome model. Injuries and tactical styles are not modeled. Possession remains a completed-pass-share proxy. Momentum reflects generated attacking events.
-
-Every club edition now has a locally bundled real badge: **192 club identities**, covering **249 historical name variants** across **all 1,660 club editions**. National teams retain their separate fallback behavior. Badges identify the club; a complete year-specific badge design history is not claimed. The badge manifest records each source, asset hash, alias, and edition mapping, and tests reject missing badge coverage.
-
-## Data audit
-
-`tests/test_data_audit.py` checks that the data is right, not merely self-consistent. Twelve final league tables are asserted against the real seasons goal for goal, eight well-known players against their real birth dates, and goals scored must balance goals conceded inside every league edition. The derived scouting files are held to the contracts they document: `profile_source`, `profile_fallback` and `turnover` across all 1,660 club editions, nationality counts totalling the squad they describe, and recorded outcomes agreeing with the tier cuts they were assigned from.
-
-Two findings are worth stating. Values that look like parsing accidents and are not — Essam El-Hadary playing a World Cup at 45, Pietro Pellegri debuting for Genoa at 15, Augsburg listing their 50-year-old goalkeeping coach as an emergency keeper — are pinned in `VERIFIED_EXTREMES` with the reason, so nobody "fixes" them later. The 361 names shared across different birth years are namesakes rather than collisions; there really are two Aaron Ramseys and two Ali Karimis, and keying identity on name plus birth year is what keeps them apart.
-
-Exactly one record was wrong: the source dates Benjamin Bouchouari to 2011, which put a squad-number-6 Ligue 1 midfielder into the prospect pool as a 14-year-old. `SOURCE_CORRECTIONS` in `scripts/build_scouting.py` carries that single fix with its reason and the original value, publishes it in `model.json` rather than applying it invisibly, and a test fails if the entry ever stops matching upstream, so a stale override cannot survive a source change.
-
-## Measured accuracy
-
-The scoring model used to ship with no measured predictive accuracy at all. `npm run data:benchmark` now supplies one. Every league edition is split by date: the first 60% of each season fits each contender, the remaining matches are predicted, and no contender sees a match it was fitted on.
-
-On **12,291 held-out matches from 85 league editions**:
+The match engine, scored on 12,291 held-out matches from 85 league editions. Each season is split by date: the first 60% fits each contender, the rest is predicted.
 
 | Model | Log loss | Brier | Top pick |
-| --- | --- | --- | --- |
-| **Shipped engine — goal ratios, eight-match prior** | **0.9956** | **0.5938** | 51.6% |
+| --- | ---: | ---: | ---: |
+| Shipped engine — goal ratios, eight-match prior | **0.9956** | **0.5938** | 51.6% |
 | Dixon-Coles MLE, fitted per edition | 1.0009 | 0.5966 | 51.5% |
-| Fitted MLE without the low-score correction | 0.9998 | 0.5963 | 51.6% |
+| Fitted MLE without low-score correction | 0.9998 | 0.5963 | 51.6% |
 | Training-split home/draw/away frequencies | 1.0681 | 0.6457 | 45.1% |
 | Uniform guess | 1.0986 | 0.6667 | 45.1% |
 
-Lower is better for log loss and Brier. The engine beats both naive baselines by a clear margin, which is the first evidence the project has ever had that its strengths carry real predictive signal.
+Lower is better for log loss and Brier. A fitted Dixon-Coles alternative was tried and lost; the eight-match prior was already doing the regularising that maximum likelihood had to be forced into, so the engine was left alone.
 
-**The fitted alternative lost.** A Dixon-Coles bivariate Poisson, fitted per edition by maximum likelihood with a low-score correlation correction, predicts *worse* than the goal ratios it was meant to replace. A sweep over regularisation strength and iteration count never closed the gap, and the gap narrowed monotonically as the fit was shrunk harder (+0.0039 log loss at weak shrinkage, +0.0019 at strong). Longer fitting made it worse. At roughly 23 matches per team, maximum likelihood overfits, and the eight-match prior was already doing the regularising that the MLE had to be forced into. The engine was left alone and the losing contender is published next to it in the interface rather than deleted.
+The scouting ranker places the true destination in its top five 20.8% of the time against ~96 candidates per season, versus 6.4% for ranking by closest club level. The progression classifier scores 50.7% accuracy against a 46.8% majority baseline, calibrated within 5 percentage points on every class.
 
-What this does **not** measure: cross-era matchups, which are the entire point of the simulator and have no ground truth anywhere in this data; tactical approaches; formations; and anything about venue beyond home advantage. A good score on ordinary league fixtures is not a licence to believe the 2023-versus-2016 numbers.
+## Known limitations
 
-## Scout lab
+- **Cross-era matchups have no ground truth.** The evaluation above covers ordinary league fixtures. City 2023 against Madrid 2016 cannot be scored against anything, and league strengths are not calibrated against each other.
+- **Squad lists carry no minutes, fees or valuations.** Player selection changes who events are attributed to, not how strong a team is. Coaches are displayed but not modelled.
+- **"No further top-five season" means unobserved, not failed.** A move to a league outside the bundled five is indistinguishable from leaving football.
+- **Fit is learned from where players actually moved**, so it reflects the recruitment market rather than merit, and cannot separate a loan from a transfer.
+- **There is no academy data.** The prospect pool is the under-21 players inside senior squad lists, which is the youngest cohort these sources can see.
 
-Two supervised models, fitted offline by `scripts/build_scouting.py` from this repository's own data. No network access, no API key, no third-party model: the browser downloads the weights and runs inference itself.
+## Data
 
-Both are named for what the squad data can actually witness, which is narrower than the word "scouting" suggests. Read the limits below before trusting a number.
+Results from [OpenFootball](https://github.com/openfootball/football.json), [FootballCSV / Soccerverse](https://github.com/footballcsv/cache.soccerverse) and [Mart Jürisoo's international results](https://github.com/martj42/international_results), all CC0. The catalog records source URLs, SHA-256 hashes, per-edition match counts and completeness.
 
-**Destination ranking** predicts which club a player moves to next. The snapshots record **8,412 club-to-club moves**; 5,327 of them train the weights and the 3,085 later ones are held back. Training is a sampled softmax over one true destination against 8 sampled alternatives. The score is a learned club embedding dotted with a player tower, plus named additive player×club terms, so every recommendation decomposes into reasons rather than arriving as a bare number.
+Squads from [FootballSquads](http://www.footballsquads.co.uk/). Material © FootballSquads.com, 1999–, all rights reserved, used for this non-commercial project under the source's [terms of use](https://www.footballsquads.co.uk/tou.htm). Not covered by the CC0 licensing of the result datasets.
 
-**Recruiting in reverse.** The player view answers "where does this prospect fit"; the club view answers the question a recruitment desk actually asks, "who fits us". Pick a club edition and the same ranker is held fixed at that destination and run across the pool, alongside the squad shape it is reasoning about: how many bodies the club carries per position against the share of an eleven that position normally takes, its mean age, its under-21 share and its overseas share, all read from the season before. Because the destination is fixed, most of the scoring terms are identical for everyone on the shortlist and describe the club rather than the player, so the reasons shown are filtered to the terms that actually differ between candidates.
-
-**Scope.** The board opens on the newest squads in the snapshot — the players who are under-21 *now*, aged to today rather than to the season they were listed in. Those prospects carry no recorded outcome by construction: their six-season window runs past the cutoff, which is precisely what makes them the ones worth scouting. Switching the scope to past cohorts shows the players whose careers the snapshot can already score, which is where the model's track record is visible rather than its predictions. When a prospect's own outcome is still open, the comparables are drawn only from past players whose careers are resolved, so every neighbour shows what actually happened.
-
-**Progression** projects which calibre of squad list a player first seen at 21 or younger appears on 2 to 6 seasons later, across four classes: no further top-five squad, squad-level club, regular-level club, elite club. Class priors are recalibrated on cohorts the weights never saw. Its output feeds the destination ranker as a feature, which is what lets the ranker treat a highly-rated prospect's options differently from an ordinary mover's.
-
-### Held-out results
-
-Validation is a forward split in time, never a random shuffle. For destinations, every observed move from **2021** onwards; for progression, cohorts from **2018** onwards. Baselines face the identical task on the identical rows.
-
-Ranking the true destination among the ~96 club editions available that season (n = 3,085):
-
-| | Top 1 | Top 5 | Top 10 | Top 25 | MRR | Median rank |
-| --- | --- | --- | --- | --- | --- | --- |
-| **This model** | **4.3%** | **21.0%** | **38.1%** | **65.9%** | **0.146** | **15** |
-| Most-active clubs | 1.5% | 5.8% | 12.1% | 28.6% | 0.060 | 46 |
-| Closest club level | 1.4% | 6.4% | 11.7% | 31.1% | 0.062 | 44 |
-
-Progression, on 3,285 held-out cohorts: accuracy **50.7%** against 46.8% for always predicting the most common class, and a Brier score of **0.6432** against 0.687 for the base rate (0.6454 before recalibration). Per-class AUC: no further top-five squad 0.667, squad-level club 0.549, regular-level club 0.581, elite club 0.777 — the middle classes are barely separable and the model card prints that rather than hiding it. Every class lands within 2.5 points of its observed rate.
-
-### Why the numbers mean what they say
-
-* A club's profile for a destination season describes that club **the season before**, so no candidate feature sees the season the prospect would be arriving into — including the prospect's own presence in that squad.
-* Club identity comes from the bundled badge manifest, which resolves the catalog's 249 club spellings to **192 real clubs**. Without it a rename such as *Athletic Bilbao* to *Athletic Club* reads as a transfer; fixing it removed 646 spurious moves from the training data and the metrics above are the lower, honest ones that resulted.
-* Cohorts whose window runs past the 2026-10-18 cutoff are left **unlabelled**, not guessed at: 7,974 of 19,076 pool entries have an observable outcome.
-* The progression window deliberately skips the season immediately after the cohort season. Counting it made the target tautological — a teenager on an elite squad list who is listed there again a year later would "reach elite" without progressing. Measured on held-out cohorts, including that season buys 7.7 points of accuracy lift over the majority class but keeps the artifact; skipping two seasons leaves censoring at 59% of the label and only 0.9 points of lift. Skipping one keeps 3.9% of lift with the artifact gone.
-* The ranker is trained on moves only, so it has no fitted opinion on a player staying put; that term keeps a weight of exactly zero and the interface says so.
-* `tests/test_evaluation.py` recovers known attack, defence and home-advantage parameters from synthetic fixtures, so a broken fitter cannot quietly produce the benchmark's numbers, and checks the harness's Python copy of the engine against the constants in `dist/simulator.js`.
-* `tests/scouting.test.mjs` replays 40 prospects and 120 candidate pairs from the Python pipeline through the JavaScript port and fails on any divergence beyond 1e-9. The feature builders exist twice and must agree exactly; a width mismatch raises rather than silently truncating.
-
-### What the ranker learned
-
-Fitted weights on the named cross terms, largest first:
-
-| Term | Weight |
-| --- | --- |
-| position_need | +6.244 |
-| nation_share | +3.148 |
-| same_competition | +1.738 |
-| corridor | +1.205 |
-| youth_fit | +0.933 |
-| step_up_young | +0.622 |
-| elite_step | -0.517 |
-| level_gap_sq | -0.366 |
-
-A gap at the prospect's position dominates everything else, then compatriots already in the squad, then staying in the same league. The level terms are negative for everyone, including the two that interact with the progression score: in this data the average move by a young player is lateral or **downward**, because a teenager at a strong club most often goes out on loan. That is a real pattern, and it is why the output is labelled "where players like this go next" rather than "best fit".
-
-### Honest limits
-
-* **There is no academy data in this project.** The pool is the 19,076 under-21 player-seasons inside the bundled senior-squad snapshots, covering 142 nationalities across all six confederations. That is the youngest cohort these sources can observe — not a youth-team intake. A player who never reached a senior squad list is invisible here. The *Enter a prospect* form exists for players the snapshot has never seen; it scores the attributes you supply and cannot verify them.
-* **A squad list records who a club registered, never who played.** So the progression target is which calibre of list a career later appears on, not how good it became. A teenager who stays registered at an elite club for years without playing reaches the top class exactly like one who starred there, and the model cannot tell them apart.
-* **Consequently the highest projections cluster on big-club academy intakes.** Being at an elite club at 18 is itself the strongest evidence of being on an elite club's list at 21. Nine of the ten highest 2019 projections are Manchester City academy names. The model is right about the label and the label is not ability.
-* **The ranker predicts recorded destinations, loans included**, which this source cannot separate from permanent transfers. It reports the market; it does not name who ought to sign a player.
-* Squad lists carry **no minutes, fees, transfer values, injuries or scouting grades**. None of those inform the models, because none exist in this data.
-* "No further top-five squad" is **censoring, not failure**. A move to a league outside these five is indistinguishable from leaving football.
-* Cross-era and cross-league strength is uncalibrated here, exactly as everywhere else in this project.
-* Archetypes are k-means clusters over the ranker's latent space, named from their own members' averages.
-
-Rebuild the models (a few minutes, pure standard library, seed 20261021):
-
-```sh
-npm run data:scouting
-```
-
-This writes `dist/scouting/model.json` (98 KB of weights, metrics and parity fixtures), `clubs.json` (793 KB of club profiles) and `prospects.json` (1241 KB of pool rows). The Scout lab fetches all three the first time it is opened, so the Matchroom pays nothing for them.
-
-## Data provenance and refresh
-
-Sources are [OpenFootball](https://github.com/openfootball/football.json), [FootballCSV / Soccerverse](https://github.com/footballcsv/cache.soccerverse), and [Mart Jürisoo's international results](https://github.com/martj42/international_results), published under CC0. The catalog includes source URLs, SHA-256 hashes, per-edition match counts, cutoffs, team counts, and completeness.
-
-Rebuild the current catalog from the downloaded source snapshots:
-
-```sh
-python3 scripts/build_catalog.py --as-of 2026-10-18
-```
-
-To download refreshed sources first (requires network access):
-
-```sh
-python3 scripts/download_sources.py
-python3 scripts/build_catalog.py --as-of YYYY-MM-DD
-```
-
-Scouting models are rebuilt separately with `npm run data:scouting`, which reads only `dist/catalog.json` and `dist/rosters/`; rerun it after any catalog or roster refresh so the pool and the held-out metrics match the snapshot.
-
-Raw downloads live in ignored `.local/sources/`. The default builder cutoff stays fixed for reproducibility; explicitly update it when refreshing. Source hashes detect changed upstream snapshots. Refreshing data or changing model code can change outputs; preserve the catalog and model version when comparing experiments.
-
-## Historical squads and coaches
-
-The bundled archive covers **all 2,002 supported team editions**, with **75,844 player-edition records** and **2,002 recorded coach snapshots**. These are repeated historical player records, not 75,844 unique people.
-
-Expand **Squad & coach** under either team to browse the source roster, search players, inspect positions and squad numbers, and select an XI. Suggested XIs support 4-3-3, 4-2-3-1, 4-4-2, 3-5-2, 5-3-2 and 3-4-3 where positions allow. Changing formation resets that side’s suggested XI; users can then edit it. Exactly 11 players with one goalkeeper are required. Players marked as departed in the source remain visible in the season archive and cannot enter the snapshot XI. Squad lists can include academy and reserve players: they are source snapshots, not official registration certificates or dated match eligibility lists.
-
-Coaches are shown as **recorded in the source snapshot**. A season with multiple managers is not reduced to a claim that the displayed coach managed every match; complete managerial tenure histories are not included.
-
-Squad pages are bundled in separate edition files and loaded only when selected. Player selections are independent on both sides, included in scenario URLs and CSV exports, and produce reproducible attribution. A separate random stream assigns actions, preserving the existing numeric team-strength simulation. Goalkeepers are excluded from shot attribution.
-
-The squad source is [FootballSquads](https://www.footballsquads.co.uk/), whose [terms](https://www.footballsquads.co.uk/tou.htm) allow non-commercial use with attribution. **These roster data are not CC0 and are not licensed for commercial reuse by this project.** The required attribution appears in the application and every roster retains its source URL and SHA-256 snapshot hash.
-
-> Source of Material is http://www.footballsquads.com. Material: © FootballSquads.com, 1999 - , All Rights Reserved
-
-Refresh squad data (network required; cached pages are reused):
-
-```sh
-npm run data:rosters
-# Parse cached pages without network:
-python3 scripts/import_rosters.py --offline
-python3 scripts/package_rosters.py
-```
-
-The import records missing editions, name mapping gaps and download errors in `.local/rosters/import-report.json`. Names are joined through explicit audited aliases within the same competition and year; fuzzy matches are not silently accepted. `dist/rosters/index.json` exposes actual coverage counts and missing editions. Empty or unverified squads are not invented.
-
-## System light and dark mode
-
-The site follows `prefers-color-scheme`, including changes while the page is open. CSS and SVG chart colours use shared theme variables, and the browser chrome uses matching theme-colour metadata. There is no saved override to conflict with your device preference. The pitch and broadcast scoreboard retain their football colours in both themes.
-
-## Verify
-
-Python 3.10+ and Node.js 20+:
-
-```sh
-npm test
-```
-
-Tests verify all 85 club season/league memberships, every supported international tournament edition, model bounds, venue behavior, deterministic generation, score/event agreement, probability normalization, Monte Carlo goal rates, and legacy SQLite ingestion reliability. Browser checks cover formations, tactical rate changes, team sheets, reproducible 10,000-match experiments, player totals and filters, highlight seeking, notebook persistence/removal, URL reloads, swapping, random fixtures, JSON export, system themes and mobile overflow. Pure model tests compare sampled outcomes with the exact distribution and check player-stat totals against events. Scouting tests cover cross-language feature parity, no-leakage club profiling, club-identity resolution, pool bounds, unlabelled recent cohorts, additive fit explanations, probability normalization, and that every published metric still beats the baseline it is shown against. A DOM shim drives the real Scout lab controller against the real markup, so a missing control or a broken render path fails the suite.
-
-## Local API and legacy ingestion demo
-
-The Python server serves the simulator and provides a separate SQLite ingestion demo for the original three synthetic fixtures. Those routes do not store the new browser-generated simulations. Current scenarios are encoded in the URL; simulation events can be exported as CSV.
-
-```sh
-curl http://127.0.0.1:8000/api/health
-curl http://127.0.0.1:8000/api/matches
-curl 'http://127.0.0.1:8000/api/matches/city/state?minute=58.25'
-curl 'http://127.0.0.1:8000/api/matches/city/events?minute=45'
-# POST /api/events accepts normalized event batches for those legacy fixtures.
-```
-
-This unauthenticated API binds only to loopback and is intended for local development. It validates events, deduplicates IDs, rejects conflicting duplicates atomically, sorts by event time, and persists through restarts. The hosted site is static and does not deploy Python or SQLite. `generate_data.py` rebuilds only the three legacy fixtures, not the historical catalog or simulator.
-
-## Remaining platform work
-
-Player ability ratings from match data; full transfer dates and manager tenures; real academy and youth-team rosters; minutes, fees and valuations to replace squad-list proxies; calibrated cross-era and cross-competition strengths; real event feeds; FastAPI/PostgreSQL/Redis Streams/WebSockets; distributed recovery; observability; Docker/CI; load and failure benchmarks. Chronological-split evaluation now exists for the match engine and both scouting models; the original throughput and latency targets remain unverified.
-
-
-## Club badge assets
-
-Badge provenance and exact mappings are in `dist/assets/crests/clubs.json`. Most additional vectors come from [JoseArroyave/football-logos](https://github.com/JoseArroyave/football-logos); the existing six crests are retained from football-data.org, and the original historical Arles-Avignon and Évian crests are sourced from Wikimedia. Club trademarks and artwork belong to their respective owners.
-
-`python3 scripts/build_badges.py` regenerates the bundled assets and mappings from cached source assets in `.local/sources/`. Normal catalog refreshes reuse the manifest, preserving all resolved badges. Any newly introduced club must be assigned an actual crest before the coverage tests pass.
-
-Match colours follow the bundled club badges across shot maps, momentum, xG, scoreline heat maps, team statistics, formations and reports. `dist/badge-colors.json` stores dominant chromatic clusters sampled from all 192 club crests; `dist/team-colors.js` reviews major-club primaries, selects badge-secondary colours for clashes and adjusts text contrast with the system theme. Monochrome crests use black and white; international sides use national colours where defined and a neutral fallback otherwise. Away xG lines are dashed as a second visual cue.
-
-All 77 national teams have locally bundled SVG flags in `dist/assets/flags`, sourced from [flag-icons v7.2.3](https://github.com/lipis/flag-icons/tree/v7.2.3) under its included MIT licence. The fixture picker and scoreboard display flags for national teams and crests for clubs. `scripts/build_flags.py` imports the pinned upstream ZIP; `scripts/build_catalog.py` retains those mappings during data refreshes. Flags represent the current national identity, rather than reconstructing historical flag changes.
-
-Vercel deployment: the repository includes `vercel.json` configured to serve the static `dist` directory with no install or build step. Deploy from the repository root with `npx vercel@latest --prod`, or import `rjrddy/jogo_bonito` in Vercel for Git-based deployments. `.vercelignore` restricts uploads to the application assets and deployment configuration; local source caches are excluded.
-
-Public Vercel URL: https://jogo-bonito-gamma.vercel.app. The Vercel project is connected to `rjrddy/jogo_bonito` for Git deployments.
+Flags from [flag-icons](https://github.com/lipis/flag-icons) (MIT). Club badges remain the property of their respective owners; provenance and per-edition mappings are in `dist/assets/crests/clubs.json`.
