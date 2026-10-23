@@ -29,9 +29,9 @@ from collections import defaultdict
 from pathlib import Path
 
 try:
-    from .build_catalog import league_results, slug
+    from .build_catalog import league_results
 except ImportError:
-    from build_catalog import league_results, slug
+    from build_catalog import league_results
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIOR = 8              # matches of competition-average prior, as the catalog uses
@@ -62,7 +62,7 @@ def fit(rows, iterations=400, rate=0.08, ridge=2e-3):
     mean_goals = sum(r['hg'] + r['ag'] for r in rows) / (2 * len(rows))
     base = math.log(max(mean_goals, 0.05))
     advantage = 0.1
-    for step in range(iterations):
+    for _ in range(iterations):
         ga = [0.0] * len(teams)
         gd = [0.0] * len(teams)
         gh = 0.0
@@ -156,7 +156,9 @@ def heuristic_rates(strengths, home, away):
     h, a = strengths.get(home), strengths.get(away)
     if not h or not a:
         return None
-    clamp = lambda n: max(0.15, min(4.5, n))
+    def clamp(n):
+        return max(0.15, min(4.5, n))
+
     return clamp(1.35 * h['attack'] * a['defense'] * 1.12), clamp(1.35 * a['attack'] * h['defense'] * 0.92)
 
 
@@ -165,7 +167,7 @@ def evaluate(as_of='2026-10-18'):
     scores = {name: dict(logloss=0.0, brier=0.0, hits=0, n=0)
               for name in ('fitted', 'fitted_no_rho', 'heuristic', 'base_rate', 'uniform')}
     editions = 0
-    for code, label, year, season, rows in league_results(as_of):
+    for *_, rows in league_results(as_of):
         if len(rows) < 120:
             continue
         rows = sorted(rows, key=lambda r: (r['date'], r['home']))

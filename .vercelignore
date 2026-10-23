@@ -3,3 +3,6 @@
 !dist/**
 !vercel.json
 !package.json
+
+# Local demo fixtures: used by server.py, never fetched by the static site
+dist/matches.json

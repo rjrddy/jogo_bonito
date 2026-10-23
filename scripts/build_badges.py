@@ -5,12 +5,12 @@ No fuzzy matching, runtime hotlinking, or generated substitute badges.
 """
 import hashlib
 import json
-import re
 import struct
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 from urllib.parse import quote
+
 try:
     from .import_rosters import normalized
 except ImportError:

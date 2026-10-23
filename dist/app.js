@@ -1,112 +1,834 @@
-import {applyTeamColors} from './team-colors.js';
-import {snapshot,probabilities} from './engine.js';
-import {simulate,TACTICS} from './simulator.js';
-import {FORMATIONS} from './squads.js';
-import {createLab} from './lab.js';
-import {createSquadController} from './roster-controller.js';
-import {createScout} from './scout.js';
-const $=id=>document.getElementById(id);
+import { applyTeamColors } from './team-colors.js';
+import { snapshot, probabilities } from './engine.js';
+import { simulate, TACTICS } from './simulator.js';
+import { FORMATIONS } from './squads.js';
+import { createLab } from './lab.js';
+import { createSquadController } from './roster-controller.js';
+import { createScout } from './scout.js';
+import { $ } from './dom.js';
 // Read before the first changeView(), which rewrites the query string.
-const bootView=new URLSearchParams(location.search).get('view');
-let badgeColors={palettes:{}},catalog,squadController,lab,scout,match,minute=0,playing=false,last=0,lastPaint=0,view='overview',simulationRun=0;
-const svgNS='http://www.w3.org/2000/svg';
-function svg(tag,attrs){const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);return el;}
-function text(id,value){$(id).textContent=value;}
-function chartBase(id,w){const root=$(id);root.replaceChildren();for(const y of [20,65,110,155])root.append(svg('line',{x1:5,x2:w-5,y1:y,y2:y,stroke:'var(--rule)','stroke-dasharray':'3 4'}));return root;}
-function render(){
- if(!match)return;
- const {events,stats}=snapshot(match,minute),h=stats.home,a=stats.away;
- text('home-score',h.goals);text('away-score',a.goals);
- for(const team of ['home','away']){const goals=events.filter(e=>e.team===team&&e.outcome==='goal');const scorers=new Map();for(const e of goals){if(!scorers.has(e.player))scorers.set(e.player,[]);scorers.get(e.player).push(Math.floor(e.minute)+"′");}text(team+'-scorers',[...scorers].map(([name,times])=>name+' '+times.join(', ')).join(' · ')||'No goals');}
- text('clock',`${String(Math.floor(minute)).padStart(2,'0')}:${String(Math.floor((minute%1)*60)).padStart(2,'0')}`);
- text('phase',minute>=90?'Full time':minute>=45?'Second half':'First half');text('time-label',`${Math.floor(minute)}′ / 90′`);$('timeline').value=minute;
- const metric=(id,left,right)=>{$(id).replaceChildren(Object.assign(document.createElement('span'),{className:'home-value',textContent:left}),Object.assign(document.createElement('em'),{textContent:'—'}),Object.assign(document.createElement('span'),{className:'away-value',textContent:right}));};
- metric('xg',h.xg.toFixed(2),a.xg.toFixed(2));const possession=h.complete+a.complete?Math.round(h.complete/(h.complete+a.complete)*100):50;metric('possession',possession+'%',(100-possession)+'%');metric('shots',h.shots,a.shots);
- const completion=s=>s.passes?Math.round(s.complete/s.passes*100)+'%':'—';metric('passes',completion(h),completion(a));text('on-target',`${h.target} — ${a.target} on target`);
- const bar=(id,left,right)=>$(id).style.width=(left+right?left/(left+right)*100:50)+'%';bar('xg-bar',h.xg,a.xg);bar('pos-bar',possession,100-possession);bar('shot-bar',h.shots,a.shots);bar('pass-bar',h.complete,a.complete);
- const p=probabilities(stats,minute,match.rates),rounded=p.map(v=>Math.floor(v*100));let remainder=100-rounded.reduce((x,y)=>x+y,0);const order=p.map((v,i)=>[v*100-rounded[i],i]).sort((x,y)=>y[0]-x[0]);for(let i=0;i<remainder;i++)rounded[order[i][1]]++;
- ['p-home','p-draw','p-away'].forEach((id,i)=>$(id).style.width=p[i]*100+'%');['ph','pd','pa'].forEach((id,i)=>text(id,rounded[i]+'%'));
- const best=p.indexOf(Math.max(...p));text('favorite-label',best===0?match.home+' win':best===1?'Draw':match.away+' win');$('win-prob').replaceChildren(document.createTextNode(rounded[best]),Object.assign(document.createElement('span'),{textContent:'%'}));text('prob-caption',minute>=90?'Full time — simulated result.':'Historical scoring rates, current score & time remaining.');
- const shots=events.filter(e=>e.type==='shot'),filter=$('shot-filter').value;$('shot-dots').replaceChildren();
- for(const e of shots.filter(e=>filter==='all'||e.team===filter||(filter==='goal'&&e.outcome==='goal'))){const dot=svg('circle',{cx:25+e.x*6.3,cy:25+e.y*3.7,r:4+e.xg*15,fill:`var(--${e.team})`,'fill-opacity':e.outcome==='goal'?1:.65,class:'shot',tabindex:0,role:'button','aria-label':`${e.player}, ${e.minute.toFixed(0)} minutes, ${e.outcome}, ${e.xg.toFixed(2)} xG`});const inspect=()=>text('shot-detail',`${Math.floor(e.minute)}′ · ${e.player} · ${e.outcome} · ${e.xg.toFixed(2)} xG`);dot.addEventListener('click',inspect);dot.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();inspect();}});if(e.outcome==='goal'){dot.setAttribute('stroke-width',3);dot.setAttribute('stroke','#fff');}$('shot-dots').append(dot);}
- const mom=chartBase('momentum',680);mom.append(svg('line',{x1:5,x2:675,y1:85,y2:85,stroke:'var(--rule)'}));
- for(let bin=0;bin<18;bin++){const ev=events.filter(e=>e.minute>=bin*5&&e.minute<(bin+1)*5);for(const [idx,team] of ['home','away'].entries()){const threat=ev.filter(e=>e.team===team).reduce((s,e)=>s+(e.type==='shot'?e.xg*40:0.3),0),height=Math.min(63,threat*2);mom.append(svg('rect',{x:9+bin*37,y:idx===0?85-height:87,width:27,height,rx:2,fill:`var(--${team}-chart)`}));}}
- const chart=chartBase('xg-chart',420),max=Math.max(2,h.xg,a.xg)*1.15;
- for(const team of ['home','away']){let total=0;let d='M 5 155';for(const e of shots.filter(e=>e.team===team)){const x=5+e.minute/90*410;d+=` H ${x} V ${155-(total+=e.xg)/max*140}`;}d+=` H ${5+minute/90*410}`;chart.append(svg('path',{d,fill:'none',stroke:`var(--${team}-chart)`,'stroke-width':2.5,'stroke-dasharray':team==='away'?'6 3':'none'}));}
- for(const [root,w] of [[mom,680],[chart,420]]){root.append(svg('line',{x1:5+minute/90*(w-10),x2:5+minute/90*(w-10),y1:5,y2:160,stroke:'var(--ink)','stroke-width':1,'stroke-dasharray':'3 3',opacity:.5}));}
- const axisLabel=svg('text',{x:8,y:12,fill:'var(--muted)','font-size':10,'font-family':'monospace'});axisLabel.textContent=max.toFixed(1)+' xG';chart.append(axisLabel);
- const eventFilter=$('event-filter').value,rows=events.filter(e=>eventFilter==='all'||e.type===eventFilter||(eventFilter==='goal'&&e.outcome==='goal')).slice().reverse().slice(0,100);$('events').replaceChildren();
- for(const e of rows){const row=document.createElement('tr');for(const [idx,value] of [`${Math.floor(e.minute)}′`,e.outcome==='goal'?'Goal':e.type==='shot'?'Shot':'Pass',match[e.team],e.player,e.outcome,e.xg?e.xg.toFixed(2):'—'].entries()){const td=document.createElement('td');if(idx===1){const span=document.createElement('span');span.className='event-type';span.textContent=value;td.append(span);}else td.textContent=value;row.append(td);}row.tabIndex=0;row.title='Inspect this event in the replay';row.onclick=()=>seek(e.minute);row.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();seek(e.minute);}};$('events').append(row);}
- if(!rows.length){const row=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent='No events yet. Play the replay or move the timeline.';row.append(td);$('events').append(row);}
- lab?.tick(match,minute);
+const bootView = new URLSearchParams(location.search).get('view');
+let badgeColors = { palettes: {} },
+  catalog,
+  squadController,
+  lab,
+  scout,
+  match,
+  minute = 0,
+  playing = false,
+  last = 0,
+  lastPaint = 0,
+  view = 'overview',
+  simulationRun = 0;
+const svgNS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs) {
+  const el = document.createElementNS(svgNS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
 }
-function displayMatch(){for(const team of ['home','away']){const edition=match[team+'_edition'];text(team+'-name',match[team]);text(team+'-vintage',edition.season+' / '+edition.competition_name);text(team+'-plan',match.formations[team]+' / '+TACTICS[match.tactics[team]].name);text(team+'-coach',(match.coaches[team].map(c=>c.name).join(' / ')||'Coach not recorded'));text('legend-'+team,match[team]+' '+edition.year);const crest=$(team+'-crest');let fallback=$(team+'-crest-fallback');if(!fallback){fallback=document.createElement('span');fallback.id=team+'-crest-fallback';fallback.className='crest fallback-crest';crest.after(fallback);}fallback.textContent=edition.name.split(/\s+/).map(n=>n[0]).slice(0,3).join('');fallback.setAttribute('aria-label',edition.name+' (crest unavailable)');crest.alt=edition.name+(edition.kind==='national'?' flag':' crest');crest.classList.toggle('national-flag',edition.kind==='national');crest.onload=()=>{crest.hidden=false;fallback.hidden=true;};crest.onerror=()=>{crest.hidden=true;fallback.hidden=false;};crest.hidden=true;fallback.hidden=false;if(edition.crest)crest.src=edition.crest;else crest.removeAttribute('src');}text('projected-goals',`${match.home_edition.year} ${match.home}: ${match.rates.home.toFixed(2)} / ${match.away_edition.year} ${match.away}: ${match.rates.away.toFixed(2)}`);text('match-seed','SEED '+match.seed);text('simulation-label',`${match.home} ${match.home_edition.year} vs ${match.away} ${match.away_edition.year} · ${match.venue==='neutral'?'Neutral ground':'Home advantage'}`);text('shot-detail','Select a simulated shot to inspect its quality and outcome.');render();}
-function setPlaying(value){playing=value;text('play',value?'Ⅱ':'▶');$('play').setAttribute('aria-label',value?'Pause replay':'Play replay');}
-function frame(now){if(playing&&last){minute=Math.min(90,minute+(now-last)/1000*Number($('speed').value)/3);if(now-lastPaint>120||minute>=90){render();lastPaint=now;}if(minute>=90)setPlaying(false);}last=now;requestAnimationFrame(frame);}
-function seek(value){if(!match)return;setPlaying(false);minute=Math.max(0,Math.min(90,Number(value)));render();}
-$('play').onclick=()=>{if(!match)return;if(minute>=90)minute=0;setPlaying(!playing);render();};$('reset').onclick=()=>{minute=0;setPlaying(false);render();};$('timeline').oninput=e=>{minute=Number(e.target.value);text('shot-detail','Select a shot to inspect its quality and outcome.');render();};$('shot-filter').onchange=render;$('event-filter').onchange=render;
-// The benchmark is a small file and only the Data & method view needs it.
-let benchmarkLoaded=false;
-async function showBenchmark(){
- if(benchmarkLoaded)return;
- benchmarkLoaded=true;
- try{
-  const response=await fetch('./benchmark.json');
-  if(!response.ok)throw new Error('Benchmark unavailable in this deployment.');
-  const data=await response.json();
-  const shipped=data.models.find(m=>m.key===data.shipped);
-  const beaten=data.models.filter(m=>m.key!==data.shipped&&m.logloss>shipped.logloss).length;
-  text('benchmark-intro',`The shipped engine was scored against ${data.models.length-1} alternatives on `
-   +`${data.matches.toLocaleString()} held-out matches from ${data.editions} league editions. Each season is split by date: `
-   +`the first ${Math.round(data.train_share*100)}% fits every contender, the rest is predicted. It wins on `
-   +`${beaten} of ${data.models.length-1}, and the model with the best held-out log loss is `
-   +`"${data.models.find(m=>m.key===data.best).label}".`);
-  const body=$('benchmark-table');body.replaceChildren();
-  for(const model of data.models){
-   const row=document.createElement('tr');
-   if(model.key===data.shipped)row.className='model-row';
-   for(const value of [model.label+(model.key===data.shipped?' — in use':''),
-    model.logloss.toFixed(4),model.brier.toFixed(4),(model.accuracy*100).toFixed(1)+'%']){
-    const cell=document.createElement('td');cell.textContent=value;row.append(cell);
-   }
-   body.append(row);
+function text(id, value) {
+  $(id).textContent = value;
+}
+function chartBase(id, w) {
+  const root = $(id);
+  root.replaceChildren();
+  for (const y of [20, 65, 110, 155])
+    root.append(
+      svg('line', { x1: 5, x2: w - 5, y1: y, y2: y, stroke: 'var(--rule)', 'stroke-dasharray': '3 4' }),
+    );
+  return root;
+}
+function render() {
+  if (!match) return;
+  const { events, stats } = snapshot(match, minute),
+    h = stats.home,
+    a = stats.away;
+  text('home-score', h.goals);
+  text('away-score', a.goals);
+  for (const team of ['home', 'away']) {
+    const goals = events.filter(e => e.team === team && e.outcome === 'goal');
+    const scorers = new Map();
+    for (const e of goals) {
+      if (!scorers.has(e.player)) scorers.set(e.player, []);
+      scorers.get(e.player).push(Math.floor(e.minute) + '′');
+    }
+    text(
+      team + '-scorers',
+      [...scorers].map(([name, times]) => name + ' ' + times.join(', ')).join(' · ') || 'No goals',
+    );
   }
-  text('benchmark-caveats','Lower log loss and Brier are better. '+data.caveats.join(' '));
- }catch(e){text('benchmark-intro',e.message);benchmarkLoaded=false;}
+  text(
+    'clock',
+    `${String(Math.floor(minute)).padStart(2, '0')}:${String(Math.floor((minute % 1) * 60)).padStart(2, '0')}`,
+  );
+  text('phase', minute >= 90 ? 'Full time' : minute >= 45 ? 'Second half' : 'First half');
+  text('time-label', `${Math.floor(minute)}′ / 90′`);
+  $('timeline').value = minute;
+  const metric = (id, left, right) => {
+    $(id).replaceChildren(
+      Object.assign(document.createElement('span'), { className: 'home-value', textContent: left }),
+      Object.assign(document.createElement('em'), { textContent: '—' }),
+      Object.assign(document.createElement('span'), { className: 'away-value', textContent: right }),
+    );
+  };
+  metric('xg', h.xg.toFixed(2), a.xg.toFixed(2));
+  const possession =
+    h.complete + a.complete ? Math.round((h.complete / (h.complete + a.complete)) * 100) : 50;
+  metric('possession', possession + '%', 100 - possession + '%');
+  metric('shots', h.shots, a.shots);
+  const completion = s => (s.passes ? Math.round((s.complete / s.passes) * 100) + '%' : '—');
+  metric('passes', completion(h), completion(a));
+  text('on-target', `${h.target} — ${a.target} on target`);
+  const bar = (id, left, right) =>
+    ($(id).style.width = (left + right ? (left / (left + right)) * 100 : 50) + '%');
+  bar('xg-bar', h.xg, a.xg);
+  bar('pos-bar', possession, 100 - possession);
+  bar('shot-bar', h.shots, a.shots);
+  bar('pass-bar', h.complete, a.complete);
+  const p = probabilities(stats, minute, match.rates),
+    rounded = p.map(v => Math.floor(v * 100));
+  const remainder = 100 - rounded.reduce((x, y) => x + y, 0);
+  const order = p.map((v, i) => [v * 100 - rounded[i], i]).sort((x, y) => y[0] - x[0]);
+  for (let i = 0; i < remainder; i++) rounded[order[i][1]]++;
+  ['p-home', 'p-draw', 'p-away'].forEach((id, i) => ($(id).style.width = p[i] * 100 + '%'));
+  ['ph', 'pd', 'pa'].forEach((id, i) => text(id, rounded[i] + '%'));
+  const best = p.indexOf(Math.max(...p));
+  text('favorite-label', best === 0 ? match.home + ' win' : best === 1 ? 'Draw' : match.away + ' win');
+  $('win-prob').replaceChildren(
+    document.createTextNode(rounded[best]),
+    Object.assign(document.createElement('span'), { textContent: '%' }),
+  );
+  text(
+    'prob-caption',
+    minute >= 90
+      ? 'Full time — simulated result.'
+      : 'Historical scoring rates, current score & time remaining.',
+  );
+  const shots = events.filter(e => e.type === 'shot'),
+    filter = $('shot-filter').value;
+  $('shot-dots').replaceChildren();
+  for (const e of shots.filter(
+    e => filter === 'all' || e.team === filter || (filter === 'goal' && e.outcome === 'goal'),
+  )) {
+    const dot = svg('circle', {
+      cx: 25 + e.x * 6.3,
+      cy: 25 + e.y * 3.7,
+      r: 4 + e.xg * 15,
+      fill: `var(--${e.team})`,
+      'fill-opacity': e.outcome === 'goal' ? 1 : 0.65,
+      class: 'shot',
+      tabindex: 0,
+      role: 'button',
+      'aria-label': `${e.player}, ${e.minute.toFixed(0)} minutes, ${e.outcome}, ${e.xg.toFixed(2)} xG`,
+    });
+    const inspect = () =>
+      text('shot-detail', `${Math.floor(e.minute)}′ · ${e.player} · ${e.outcome} · ${e.xg.toFixed(2)} xG`);
+    dot.addEventListener('click', inspect);
+    dot.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        inspect();
+      }
+    });
+    if (e.outcome === 'goal') {
+      dot.setAttribute('stroke-width', 3);
+      dot.setAttribute('stroke', '#fff');
+    }
+    $('shot-dots').append(dot);
+  }
+  const mom = chartBase('momentum', 680);
+  mom.append(svg('line', { x1: 5, x2: 675, y1: 85, y2: 85, stroke: 'var(--rule)' }));
+  for (let bin = 0; bin < 18; bin++) {
+    const ev = events.filter(e => e.minute >= bin * 5 && e.minute < (bin + 1) * 5);
+    for (const [idx, team] of ['home', 'away'].entries()) {
+      const threat = ev
+          .filter(e => e.team === team)
+          .reduce((s, e) => s + (e.type === 'shot' ? e.xg * 40 : 0.3), 0),
+        height = Math.min(63, threat * 2);
+      mom.append(
+        svg('rect', {
+          x: 9 + bin * 37,
+          y: idx === 0 ? 85 - height : 87,
+          width: 27,
+          height,
+          rx: 2,
+          fill: `var(--${team}-chart)`,
+        }),
+      );
+    }
+  }
+  const chart = chartBase('xg-chart', 420),
+    max = Math.max(2, h.xg, a.xg) * 1.15;
+  for (const team of ['home', 'away']) {
+    let total = 0;
+    let d = 'M 5 155';
+    for (const e of shots.filter(e => e.team === team)) {
+      const x = 5 + (e.minute / 90) * 410;
+      d += ` H ${x} V ${155 - ((total += e.xg) / max) * 140}`;
+    }
+    d += ` H ${5 + (minute / 90) * 410}`;
+    chart.append(
+      svg('path', {
+        d,
+        fill: 'none',
+        stroke: `var(--${team}-chart)`,
+        'stroke-width': 2.5,
+        'stroke-dasharray': team === 'away' ? '6 3' : 'none',
+      }),
+    );
+  }
+  for (const [root, w] of [
+    [mom, 680],
+    [chart, 420],
+  ]) {
+    root.append(
+      svg('line', {
+        x1: 5 + (minute / 90) * (w - 10),
+        x2: 5 + (minute / 90) * (w - 10),
+        y1: 5,
+        y2: 160,
+        stroke: 'var(--ink)',
+        'stroke-width': 1,
+        'stroke-dasharray': '3 3',
+        opacity: 0.5,
+      }),
+    );
+  }
+  const axisLabel = svg('text', {
+    x: 8,
+    y: 12,
+    fill: 'var(--muted)',
+    'font-size': 10,
+    'font-family': 'monospace',
+  });
+  axisLabel.textContent = max.toFixed(1) + ' xG';
+  chart.append(axisLabel);
+  const eventFilter = $('event-filter').value,
+    rows = events
+      .filter(
+        e =>
+          eventFilter === 'all' || e.type === eventFilter || (eventFilter === 'goal' && e.outcome === 'goal'),
+      )
+      .slice()
+      .reverse()
+      .slice(0, 100);
+  $('events').replaceChildren();
+  for (const e of rows) {
+    const row = document.createElement('tr');
+    for (const [idx, value] of [
+      `${Math.floor(e.minute)}′`,
+      e.outcome === 'goal' ? 'Goal' : e.type === 'shot' ? 'Shot' : 'Pass',
+      match[e.team],
+      e.player,
+      e.outcome,
+      e.xg ? e.xg.toFixed(2) : '—',
+    ].entries()) {
+      const td = document.createElement('td');
+      if (idx === 1) {
+        const span = document.createElement('span');
+        span.className = 'event-type';
+        span.textContent = value;
+        td.append(span);
+      } else td.textContent = value;
+      row.append(td);
+    }
+    row.tabIndex = 0;
+    row.title = 'Inspect this event in the replay';
+    row.onclick = () => seek(e.minute);
+    row.onkeydown = event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        seek(e.minute);
+      }
+    };
+    $('events').append(row);
+  }
+  if (!rows.length) {
+    const row = document.createElement('tr'),
+      td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = 'No events yet. Play the replay or move the timeline.';
+    row.append(td);
+    $('events').append(row);
+  }
+  lab?.tick(match, minute);
 }
-function changeView(next){view=next;if(next!=='overview'){$('fixture-builder').hidden=true;$('toggle-builder').setAttribute('aria-expanded','false');text('toggle-builder','Edit fixture ＋');}document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el.dataset.view===view));text('breadcrumb',({overview:'Matchroom',lineups:'Team sheets',forecast:'Forecast lab',report:'Match report',scout:'Scout lab',notebook:'Notebook',about:'Data & method'})[view]||'Matchroom');$('match-shell').hidden=['notebook','about','scout'].includes(view);$('dashboard').hidden=view!=='overview';$('events-section').hidden=view!=='report';$('about').hidden=view!=='about';lab?.showView(view);if(view==='scout')scout?.show();if(view==='about')showBenchmark();const url=new URL(location.href);if(view==='overview')url.searchParams.delete('view');else url.searchParams.set('view',view);history.replaceState(null,'',url);}
-document.querySelectorAll('.nav').forEach(el=>el.onclick=()=>changeView(el.dataset.view));$('help').onclick=()=>changeView('about');
-const competitions=[['en','Premier League'],['es','La Liga'],['de','Bundesliga'],['it','Serie A'],['fr','Ligue 1'],['wc','World Cup'],['euros','Euros'],['copa','Copa América']];
-function option(value,label){return Object.assign(document.createElement('option'),{value:String(value),textContent:label});}
-function selected(team){return catalog.teams.find(t=>t.id===$(team+'-team').value);}
-function populateYears(team,preferred){const code=$(team+'-competition').value,years=[...new Set(catalog.teams.filter(t=>t.competition===code).map(t=>t.year))].sort((a,b)=>b-a);$(team+'-year').replaceChildren(...years.map(y=>option(y,code==='euros'&&y===2021?'2020 / played 2021':y)));if(years.includes(Number(preferred)))$(team+'-year').value=preferred;populateTeams(team);}
-function populateTeams(team,preferred){const code=$(team+'-competition').value,year=Number($(team+'-year').value),query=$(team+'-search').value.trim().toLocaleLowerCase(),current=preferred||$(team+'-team').value;
- const editions=catalog.teams.filter(t=>t.competition===code&&t.year===year&&t.name.toLocaleLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name));
- $(team+'-team').replaceChildren(...editions.map(t=>option(t.id,t.name)));if(editions.some(t=>t.id===current))$(team+'-team').value=current;
- if(!editions.length)$(team+'-team').append(option('','No matching team'));
- updateHistory(team);updateReady();}
-function updateHistory(team){const t=selected(team);lab?.preview(team,t);if(!t){text(team+'-history','No team found. Clear the search or choose another edition.');squadController?.show(team,null);return;}const report=catalog.coverage.find(c=>c.competition===t.competition&&c.year===t.year);text(team+'-history',`${t.season} · ${t.played} matches · ${t.gf} scored / ${t.ga} conceded${report?.complete===false?' · PARTIAL SOURCE DATA':''}`);squadController?.show(team,t);}
-function updateReady(){const home=selected('home'),away=selected('away');const ready=Boolean(home&&away&&(!squadController||(!squadController.error(home,'home')&&!squadController.error(away,'away'))));$('simulate').disabled=!ready;$('rerun').disabled=!ready;let dirty=Boolean(match&&(!home||!away));if(match&&home&&away){dirty=['home','away'].some(side=>{const edition=side==='home'?home:away;return edition.id!==match[side+'_edition'].id||$(side+'-formation').value!==match.formations[side]||$(side+'-tactic').value!==match.tactics[side]||squadController.selectionIds(side,edition).slice().sort().join(',')!==match.lineups[side].map(p=>p.id).sort().join(',');})||Number($('seed').value)!==match.seed||$('venue').value!==match.venue;}text('fixture-state',match?(dirty?'UNSIMULATED CHANGES':'CURRENT MATCH'):'');$('fixture-state').classList.toggle('is-dirty',dirty);}
-function chooseEdition(team,edition){$(team+'-competition').value=edition.competition;$(team+'-search').value='';populateYears(team,edition.year);populateTeams(team,edition.id);}
-async function runMatch(){const request=++simulationRun;try{const home=selected('home'),away=selected('away');if(!home||!away)throw new Error('Choose both team editions.');if(!$('seed').value.trim())throw new Error('Enter a random seed.');const seed=Number($('seed').value),venue=$('venue').value,tactics={home:$('home-tactic').value,away:$('away-tactic').value},formations={home:$('home-formation').value,away:$('away-formation').value};const [homeXI,awayXI]=await Promise.all(['home','away'].map((side,i)=>squadController.configuration(side,i?away:home)));if(request!==simulationRun||selected('home')?.id!==home.id||selected('away')?.id!==away.id)return;match=simulate(home,away,{seed,venue,tactics,formations,lineups:{home:homeXI,away:awayXI}});match.coaches={home:squadController.coaches(home),away:squadController.coaches(away)};minute=0;setPlaying(false);$('builder-error').hidden=true;const url=new URL(location.href);url.searchParams.set('home',home.id);url.searchParams.set('away',away.id);url.searchParams.set('seed',match.seed);url.searchParams.set('venue',match.venue);for(const side of ['home','away']){url.searchParams.set(side+'_xi',match.lineups[side].map(p=>p.id).join(','));url.searchParams.set(side+'_formation',match.formations[side]);url.searchParams.set(side+'_tactic',match.tactics[side]);}history.replaceState(null,'',url);applyTeamColors(match,badgeColors,window.matchMedia('(prefers-color-scheme: dark)').matches);lab?.matchStarted(match);displayMatch();updateReady();}catch(e){text('builder-error',e.message);$('builder-error').hidden=false;}}
-async function preset(name){const definitions={rivals:[['en',2023,'Manchester City'],['en',2023,'Liverpool']],city:[['en',2023,'Manchester City'],['es',2016,'Real Madrid']],nations:[['euros',2012,'Spain'],['wc',2022,'Argentina']],barca:[['es',2011,'Barcelona'],['de',2020,'Bayern Munich']],derby:[['it',2011,'Milan'],['it',2010,'Inter']],brazil:[['wc',2010,'Brazil'],['wc',2018,'France']]};for(const [i,team] of ['home','away'].entries()){const [code,year,teamName]=definitions[name][i];const edition=catalog.teams.find(t=>t.competition===code&&t.year===year&&t.name===teamName);if(!edition)throw new Error('Preset unavailable in catalog: '+teamName);chooseEdition(team,edition);}await runMatch();}
-$('simulate').onclick=runMatch;$('rerun').onclick=()=>{$('seed').value=crypto.getRandomValues(new Uint32Array(1))[0];runMatch();};$('full-time').onclick=()=>{if(!match)return;setPlaying(false);minute=90;render();};
-$('export').onclick=()=>{if(!match)return;const {events}=snapshot(match,minute);const columns=['id','minute','team','type','player','outcome','xg'];const csv=[['model',match.model,'seed',match.seed,'venue',match.venue,'home_formation',match.formations.home,'away_formation',match.formations.away,'home_tactic',match.tactics.home,'away_tactic',match.tactics.away].join(','),['home',match.home,match.home_edition.season,'away',match.away,match.away_edition.season].join(','),...['home','away'].map(side=>[side+'_xi',...match.lineups[side].map(p=>'"'+p.name.replaceAll('"','""')+'"')].join(',')),columns.join(','),...events.map(e=>columns.map(k=>'"'+String(k==='team'?match[e.team]:e[k]).replaceAll('"','""')+'"').join(','))].join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download=`jogo-bonito-${match.home_edition.id}-vs-${match.away_edition.id}-${match.seed}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-try{const response=await fetch('./catalog.json');if(!response.ok)throw new Error('Unable to load team catalog. Reload to retry.');catalog=await response.json();const colorsResponse=await fetch('./badge-colors.json');if(!colorsResponse.ok)throw new Error('Unable to load badge colours. Reload to retry.');badgeColors=await colorsResponse.json();window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>{if(match)applyTeamColors(match,badgeColors,e.matches);});const rosterResponse=await fetch('./rosters/index.json');if(!rosterResponse.ok)throw new Error('Unable to load historical squads. Reload to retry.');const rosterManifest=await rosterResponse.json();squadController=createSquadController(rosterManifest,updateReady);lab=createLab({getMatch:()=>match,getMinute:()=>minute,seek,changeView});
- scout=createScout({notify:message=>lab.notify(message),openInMatchroom:async id=>{const edition=catalog.teams.find(t=>t.id===id);if(!edition){lab.notify('That club edition is not in the catalog.');return;}chooseEdition('home',edition);changeView('overview');await runMatch();lab.notify(`${edition.name} ${edition.year} loaded as the home side.`);}});$('report-view').append($('events-section'));changeView('overview');text('roster-coverage',`${Object.keys(rosterManifest.editions).length.toLocaleString()} of ${catalog.teams.length.toLocaleString()} team editions have imported squads, with ${rosterManifest.players.toLocaleString()} player records and ${rosterManifest.coaches.toLocaleString()} recorded coach snapshots. Missing or partial sources are labelled in the squad view. Full-season manager changes and dated transfer eligibility are not reconstructed.`);text('catalog-status',`${catalog.teams.length.toLocaleString()} team editions · five leagues + three international tournaments · results through ${catalog.as_of}`);
- for(const team of ['home','away']){$(team+'-competition').replaceChildren(...competitions.map(([code,name])=>option(code,name)));$(team+'-competition').onchange=()=>{$(team+'-search').value='';populateYears(team);};$(team+'-year').onchange=()=>populateTeams(team);$(team+'-search').oninput=()=>populateTeams(team);$(team+'-team').onchange=()=>{updateHistory(team);updateReady();};}
- document.querySelectorAll('[data-preset]').forEach(button=>button.onclick=()=>preset(button.dataset.preset));
- const partial=catalog.coverage.filter(c=>c.complete===false);text('coverage-summary',`${catalog.teams.length.toLocaleString()} team editions from ${catalog.coverage.length} competition editions and ${catalog.coverage.reduce((n,c)=>n+c.matches,0).toLocaleString()} results. Snapshot cutoff: ${catalog.as_of}. ${partial.length} editions have incomplete source results; their available teams remain selectable and are marked in the builder. International result scores can include extra time, so those strengths are approximate 90-minute rates.`);
- for(const c of catalog.coverage){const row=document.createElement('tr');for(const value of [c.label,c.season,c.teams,`${c.matches}${c.expected_matches?' / '+c.expected_matches:''}`,c.complete===true?'Complete':c.complete===false?'Partial':'Unverified']){const td=document.createElement('td');td.textContent=value;row.append(td);}$('coverage-table').append(row);}
- const params=new URLSearchParams(location.search);for(const side of ['home','away']){const formation=params.get(side+'_formation'),tactic=params.get(side+'_tactic');if(Object.hasOwn(FORMATIONS,formation))$(side+'-formation').value=formation;if(Object.hasOwn(TACTICS,tactic))$(side+'-tactic').value=tactic;$(side+'-tactic').onchange=updateReady;$(side+'-formation').onchange=async()=>{const edition=selected(side);if(edition)await squadController.resetFormation(side,edition);};}
- if(bootView&&document.querySelector(`.nav[data-view="${CSS.escape(bootView)}"]`))changeView(bootView);
- const home=catalog.teams.find(t=>t.id===params.get('home')),away=catalog.teams.find(t=>t.id===params.get('away'));
- if(home&&away){chooseEdition('home',home);chooseEdition('away',away);$('seed').value=params.get('seed')??202316;$('venue').value=['home','neutral'].includes(params.get('venue'))?params.get('venue'):'neutral';await runMatch();}else await preset('rivals');
- $('seed').addEventListener('input',updateReady);$('venue').addEventListener('change',updateReady);
- $('toggle-builder').onclick=()=>{const open=$('fixture-builder').hidden;$('fixture-builder').hidden=!open;$('toggle-builder').setAttribute('aria-expanded',String(open));text('toggle-builder',open?'Hide setup −':'Edit fixture ＋');};
- $('random-fixture').onclick=async()=>{const picks=crypto.getRandomValues(new Uint32Array(2));const home=catalog.teams[picks[0]%catalog.teams.length];let away=catalog.teams[picks[1]%catalog.teams.length];if(away.id===home.id)away=catalog.teams[(picks[1]+1)%catalog.teams.length];chooseEdition('home',home);chooseEdition('away',away);await runMatch();lab.notify('New cross-era fixture selected.');};
- $('swap-sides').onclick=async()=>{try{const home=selected('home'),away=selected('away');if(!home||!away)return;const [hxi,axi]=await Promise.all([squadController.configuration('home',home),squadController.configuration('away',away)]);for(const suffix of ['formation','tactic']){const h=$('home-'+suffix).value;$('home-'+suffix).value=$('away-'+suffix).value;$('away-'+suffix).value=h;}chooseEdition('home',away);chooseEdition('away',home);await Promise.all([squadController.setSelection('home',away,axi.map(p=>p.id)),squadController.setSelection('away',home,hxi.map(p=>p.id))]);await runMatch();lab.notify('Sides, XIs and game plans swapped.');}catch(e){lab.notify(e.message);}};
- for(const [id,direction] of [['previous-chance',-1],['next-chance',1]])$(id).onclick=()=>{if(!match)return;const shots=match.events.filter(e=>e.type==='shot');const shot=direction>0?shots.find(e=>e.minute>minute+.0001):shots.slice().reverse().find(e=>e.minute<minute-.0001);if(shot)seek(shot.minute);else lab.notify(direction>0?'No further chances.':'No earlier chances.');};
- document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea,button,a,summary')||e.ctrlKey||e.metaKey||e.altKey)return;if(e.code==='Space'){e.preventDefault();$('play').click();}else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();seek(minute+(e.key==='ArrowRight'?5:-5));}});
- requestAnimationFrame(frame);
-}catch(error){text('catalog-status',error.message);text('phase','Simulator unavailable');$('play').disabled=true;text('builder-error',error.message);$('builder-error').hidden=false;}
+function displayMatch() {
+  for (const team of ['home', 'away']) {
+    const edition = match[team + '_edition'];
+    text(team + '-name', match[team]);
+    text(team + '-vintage', edition.season + ' / ' + edition.competition_name);
+    text(team + '-plan', match.formations[team] + ' / ' + TACTICS[match.tactics[team]].name);
+    text(team + '-coach', match.coaches[team].map(c => c.name).join(' / ') || 'Coach not recorded');
+    text('legend-' + team, match[team] + ' ' + edition.year);
+    const crest = $(team + '-crest');
+    let fallback = $(team + '-crest-fallback');
+    if (!fallback) {
+      fallback = document.createElement('span');
+      fallback.id = team + '-crest-fallback';
+      fallback.className = 'crest fallback-crest';
+      crest.after(fallback);
+    }
+    fallback.textContent = edition.name
+      .split(/\s+/)
+      .map(n => n[0])
+      .slice(0, 3)
+      .join('');
+    fallback.setAttribute('aria-label', edition.name + ' (crest unavailable)');
+    crest.alt = edition.name + (edition.kind === 'national' ? ' flag' : ' crest');
+    crest.classList.toggle('national-flag', edition.kind === 'national');
+    crest.onload = () => {
+      crest.hidden = false;
+      fallback.hidden = true;
+    };
+    crest.onerror = () => {
+      crest.hidden = true;
+      fallback.hidden = false;
+    };
+    crest.hidden = true;
+    fallback.hidden = false;
+    if (edition.crest) crest.src = edition.crest;
+    else crest.removeAttribute('src');
+  }
+  text(
+    'projected-goals',
+    `${match.home_edition.year} ${match.home}: ${match.rates.home.toFixed(2)} / ${match.away_edition.year} ${match.away}: ${match.rates.away.toFixed(2)}`,
+  );
+  text('match-seed', 'SEED ' + match.seed);
+  text(
+    'simulation-label',
+    `${match.home} ${match.home_edition.year} vs ${match.away} ${match.away_edition.year} · ${match.venue === 'neutral' ? 'Neutral ground' : 'Home advantage'}`,
+  );
+  text('shot-detail', 'Select a simulated shot to inspect its quality and outcome.');
+  render();
+}
+function setPlaying(value) {
+  playing = value;
+  text('play', value ? 'Ⅱ' : '▶');
+  $('play').setAttribute('aria-label', value ? 'Pause replay' : 'Play replay');
+}
+function frame(now) {
+  if (playing && last) {
+    minute = Math.min(90, minute + (((now - last) / 1000) * Number($('speed').value)) / 3);
+    if (now - lastPaint > 120 || minute >= 90) {
+      render();
+      lastPaint = now;
+    }
+    if (minute >= 90) setPlaying(false);
+  }
+  last = now;
+  requestAnimationFrame(frame);
+}
+function seek(value) {
+  if (!match) return;
+  setPlaying(false);
+  minute = Math.max(0, Math.min(90, Number(value)));
+  render();
+}
+$('play').onclick = () => {
+  if (!match) return;
+  if (minute >= 90) minute = 0;
+  setPlaying(!playing);
+  render();
+};
+$('reset').onclick = () => {
+  minute = 0;
+  setPlaying(false);
+  render();
+};
+$('timeline').oninput = e => {
+  minute = Number(e.target.value);
+  text('shot-detail', 'Select a shot to inspect its quality and outcome.');
+  render();
+};
+$('shot-filter').onchange = render;
+$('event-filter').onchange = render;
+// The benchmark is a small file and only the Data & method view needs it.
+let benchmarkLoaded = false;
+async function showBenchmark() {
+  if (benchmarkLoaded) return;
+  benchmarkLoaded = true;
+  try {
+    const response = await fetch('./benchmark.json');
+    if (!response.ok) throw new Error('Benchmark unavailable in this deployment.');
+    const data = await response.json();
+    const shipped = data.models.find(m => m.key === data.shipped);
+    const beaten = data.models.filter(m => m.key !== data.shipped && m.logloss > shipped.logloss).length;
+    text(
+      'benchmark-intro',
+      `The shipped engine was scored against ${data.models.length - 1} alternatives on ` +
+        `${data.matches.toLocaleString()} held-out matches from ${data.editions} league editions. Each season is split by date: ` +
+        `the first ${Math.round(data.train_share * 100)}% fits every contender, the rest is predicted. It wins on ` +
+        `${beaten} of ${data.models.length - 1}, and the model with the best held-out log loss is ` +
+        `"${data.models.find(m => m.key === data.best).label}".`,
+    );
+    const body = $('benchmark-table');
+    body.replaceChildren();
+    for (const model of data.models) {
+      const row = document.createElement('tr');
+      if (model.key === data.shipped) row.className = 'model-row';
+      for (const value of [
+        model.label + (model.key === data.shipped ? ' — in use' : ''),
+        model.logloss.toFixed(4),
+        model.brier.toFixed(4),
+        (model.accuracy * 100).toFixed(1) + '%',
+      ]) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    text('benchmark-caveats', 'Lower log loss and Brier are better. ' + data.caveats.join(' '));
+  } catch (e) {
+    text('benchmark-intro', e.message);
+    benchmarkLoaded = false;
+  }
+}
+function changeView(next) {
+  view = next;
+  if (next !== 'overview') {
+    $('fixture-builder').hidden = true;
+    $('toggle-builder').setAttribute('aria-expanded', 'false');
+    text('toggle-builder', 'Edit fixture ＋');
+  }
+  document.querySelectorAll('.nav').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+  text(
+    'breadcrumb',
+    {
+      overview: 'Matchroom',
+      lineups: 'Team sheets',
+      forecast: 'Forecast lab',
+      report: 'Match report',
+      scout: 'Scout lab',
+      notebook: 'Notebook',
+      about: 'Data & method',
+    }[view] || 'Matchroom',
+  );
+  $('match-shell').hidden = ['notebook', 'about', 'scout'].includes(view);
+  $('dashboard').hidden = view !== 'overview';
+  $('events-section').hidden = view !== 'report';
+  $('about').hidden = view !== 'about';
+  lab?.showView(view);
+  if (view === 'scout') scout?.show();
+  if (view === 'about') showBenchmark();
+  const url = new URL(location.href);
+  if (view === 'overview') url.searchParams.delete('view');
+  else url.searchParams.set('view', view);
+  history.replaceState(null, '', url);
+}
+document.querySelectorAll('.nav').forEach(el => (el.onclick = () => changeView(el.dataset.view)));
+$('help').onclick = () => changeView('about');
+const competitions = [
+  ['en', 'Premier League'],
+  ['es', 'La Liga'],
+  ['de', 'Bundesliga'],
+  ['it', 'Serie A'],
+  ['fr', 'Ligue 1'],
+  ['wc', 'World Cup'],
+  ['euros', 'Euros'],
+  ['copa', 'Copa América'],
+];
+function option(value, label) {
+  return Object.assign(document.createElement('option'), { value: String(value), textContent: label });
+}
+function selected(team) {
+  return catalog.teams.find(t => t.id === $(team + '-team').value);
+}
+function populateYears(team, preferred) {
+  const code = $(team + '-competition').value,
+    years = [...new Set(catalog.teams.filter(t => t.competition === code).map(t => t.year))].sort(
+      (a, b) => b - a,
+    );
+  $(team + '-year').replaceChildren(
+    ...years.map(y => option(y, code === 'euros' && y === 2021 ? '2020 / played 2021' : y)),
+  );
+  if (years.includes(Number(preferred))) $(team + '-year').value = preferred;
+  populateTeams(team);
+}
+function populateTeams(team, preferred) {
+  const code = $(team + '-competition').value,
+    year = Number($(team + '-year').value),
+    query = $(team + '-search')
+      .value.trim()
+      .toLocaleLowerCase(),
+    current = preferred || $(team + '-team').value;
+  const editions = catalog.teams
+    .filter(t => t.competition === code && t.year === year && t.name.toLocaleLowerCase().includes(query))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  $(team + '-team').replaceChildren(...editions.map(t => option(t.id, t.name)));
+  if (editions.some(t => t.id === current)) $(team + '-team').value = current;
+  if (!editions.length) $(team + '-team').append(option('', 'No matching team'));
+  updateHistory(team);
+  updateReady();
+}
+function updateHistory(team) {
+  const t = selected(team);
+  lab?.preview(team, t);
+  if (!t) {
+    text(team + '-history', 'No team found. Clear the search or choose another edition.');
+    squadController?.show(team, null);
+    return;
+  }
+  const report = catalog.coverage.find(c => c.competition === t.competition && c.year === t.year);
+  text(
+    team + '-history',
+    `${t.season} · ${t.played} matches · ${t.gf} scored / ${t.ga} conceded${report?.complete === false ? ' · PARTIAL SOURCE DATA' : ''}`,
+  );
+  squadController?.show(team, t);
+}
+function updateReady() {
+  const home = selected('home'),
+    away = selected('away');
+  const ready = Boolean(
+    home &&
+    away &&
+    (!squadController || (!squadController.error(home, 'home') && !squadController.error(away, 'away'))),
+  );
+  $('simulate').disabled = !ready;
+  $('rerun').disabled = !ready;
+  let dirty = Boolean(match && (!home || !away));
+  if (match && home && away) {
+    dirty =
+      ['home', 'away'].some(side => {
+        const edition = side === 'home' ? home : away;
+        return (
+          edition.id !== match[side + '_edition'].id ||
+          $(side + '-formation').value !== match.formations[side] ||
+          $(side + '-tactic').value !== match.tactics[side] ||
+          squadController.selectionIds(side, edition).slice().sort().join(',') !==
+            match.lineups[side]
+              .map(p => p.id)
+              .sort()
+              .join(',')
+        );
+      }) ||
+      Number($('seed').value) !== match.seed ||
+      $('venue').value !== match.venue;
+  }
+  text('fixture-state', match ? (dirty ? 'UNSIMULATED CHANGES' : 'CURRENT MATCH') : '');
+  $('fixture-state').classList.toggle('is-dirty', dirty);
+}
+function chooseEdition(team, edition) {
+  $(team + '-competition').value = edition.competition;
+  $(team + '-search').value = '';
+  populateYears(team, edition.year);
+  populateTeams(team, edition.id);
+}
+async function runMatch() {
+  const request = ++simulationRun;
+  try {
+    const home = selected('home'),
+      away = selected('away');
+    if (!home || !away) throw new Error('Choose both team editions.');
+    if (!$('seed').value.trim()) throw new Error('Enter a random seed.');
+    const seed = Number($('seed').value),
+      venue = $('venue').value,
+      tactics = { home: $('home-tactic').value, away: $('away-tactic').value },
+      formations = { home: $('home-formation').value, away: $('away-formation').value };
+    const [homeXI, awayXI] = await Promise.all(
+      ['home', 'away'].map((side, i) => squadController.configuration(side, i ? away : home)),
+    );
+    if (request !== simulationRun || selected('home')?.id !== home.id || selected('away')?.id !== away.id)
+      return;
+    match = simulate(home, away, {
+      seed,
+      venue,
+      tactics,
+      formations,
+      lineups: { home: homeXI, away: awayXI },
+    });
+    match.coaches = { home: squadController.coaches(home), away: squadController.coaches(away) };
+    minute = 0;
+    setPlaying(false);
+    $('builder-error').hidden = true;
+    const url = new URL(location.href);
+    url.searchParams.set('home', home.id);
+    url.searchParams.set('away', away.id);
+    url.searchParams.set('seed', match.seed);
+    url.searchParams.set('venue', match.venue);
+    for (const side of ['home', 'away']) {
+      url.searchParams.set(side + '_xi', match.lineups[side].map(p => p.id).join(','));
+      url.searchParams.set(side + '_formation', match.formations[side]);
+      url.searchParams.set(side + '_tactic', match.tactics[side]);
+    }
+    history.replaceState(null, '', url);
+    applyTeamColors(match, badgeColors, window.matchMedia('(prefers-color-scheme: dark)').matches);
+    lab?.matchStarted(match);
+    displayMatch();
+    updateReady();
+  } catch (e) {
+    text('builder-error', e.message);
+    $('builder-error').hidden = false;
+  }
+}
+async function preset(name) {
+  const definitions = {
+    rivals: [
+      ['en', 2023, 'Manchester City'],
+      ['en', 2023, 'Liverpool'],
+    ],
+    city: [
+      ['en', 2023, 'Manchester City'],
+      ['es', 2016, 'Real Madrid'],
+    ],
+    nations: [
+      ['euros', 2012, 'Spain'],
+      ['wc', 2022, 'Argentina'],
+    ],
+    barca: [
+      ['es', 2011, 'Barcelona'],
+      ['de', 2020, 'Bayern Munich'],
+    ],
+    derby: [
+      ['it', 2011, 'Milan'],
+      ['it', 2010, 'Inter'],
+    ],
+    brazil: [
+      ['wc', 2010, 'Brazil'],
+      ['wc', 2018, 'France'],
+    ],
+  };
+  for (const [i, team] of ['home', 'away'].entries()) {
+    const [code, year, teamName] = definitions[name][i];
+    const edition = catalog.teams.find(t => t.competition === code && t.year === year && t.name === teamName);
+    if (!edition) throw new Error('Preset unavailable in catalog: ' + teamName);
+    chooseEdition(team, edition);
+  }
+  await runMatch();
+}
+$('simulate').onclick = runMatch;
+$('rerun').onclick = () => {
+  $('seed').value = crypto.getRandomValues(new Uint32Array(1))[0];
+  runMatch();
+};
+$('full-time').onclick = () => {
+  if (!match) return;
+  setPlaying(false);
+  minute = 90;
+  render();
+};
+$('export').onclick = () => {
+  if (!match) return;
+  const { events } = snapshot(match, minute);
+  const columns = ['id', 'minute', 'team', 'type', 'player', 'outcome', 'xg'];
+  const csv = [
+    [
+      'model',
+      match.model,
+      'seed',
+      match.seed,
+      'venue',
+      match.venue,
+      'home_formation',
+      match.formations.home,
+      'away_formation',
+      match.formations.away,
+      'home_tactic',
+      match.tactics.home,
+      'away_tactic',
+      match.tactics.away,
+    ].join(','),
+    ['home', match.home, match.home_edition.season, 'away', match.away, match.away_edition.season].join(','),
+    ...['home', 'away'].map(side =>
+      [side + '_xi', ...match.lineups[side].map(p => '"' + p.name.replaceAll('"', '""') + '"')].join(','),
+    ),
+    columns.join(','),
+    ...events.map(e =>
+      columns
+        .map(k => '"' + String(k === 'team' ? match[e.team] : e[k]).replaceAll('"', '""') + '"')
+        .join(','),
+    ),
+  ].join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `jogo-bonito-${match.home_edition.id}-vs-${match.away_edition.id}-${match.seed}.csv`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+try {
+  const response = await fetch('./catalog.json');
+  if (!response.ok) throw new Error('Unable to load team catalog. Reload to retry.');
+  catalog = await response.json();
+  const colorsResponse = await fetch('./badge-colors.json');
+  if (!colorsResponse.ok) throw new Error('Unable to load badge colours. Reload to retry.');
+  badgeColors = await colorsResponse.json();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (match) applyTeamColors(match, badgeColors, e.matches);
+  });
+  const rosterResponse = await fetch('./rosters/index.json');
+  if (!rosterResponse.ok) throw new Error('Unable to load historical squads. Reload to retry.');
+  const rosterManifest = await rosterResponse.json();
+  squadController = createSquadController(rosterManifest, updateReady);
+  lab = createLab({ getMatch: () => match, getMinute: () => minute, seek, changeView });
+  scout = createScout({
+    notify: message => lab.notify(message),
+    openInMatchroom: async id => {
+      const edition = catalog.teams.find(t => t.id === id);
+      if (!edition) {
+        lab.notify('That club edition is not in the catalog.');
+        return;
+      }
+      chooseEdition('home', edition);
+      changeView('overview');
+      await runMatch();
+      lab.notify(`${edition.name} ${edition.year} loaded as the home side.`);
+    },
+  });
+  $('report-view').append($('events-section'));
+  changeView('overview');
+  text(
+    'roster-coverage',
+    `${Object.keys(rosterManifest.editions).length.toLocaleString()} of ${catalog.teams.length.toLocaleString()} team editions have imported squads, with ${rosterManifest.players.toLocaleString()} player records and ${rosterManifest.coaches.toLocaleString()} recorded coach snapshots. Missing or partial sources are labelled in the squad view. Full-season manager changes and dated transfer eligibility are not reconstructed.`,
+  );
+  text(
+    'catalog-status',
+    `${catalog.teams.length.toLocaleString()} team editions · five leagues + three international tournaments · results through ${catalog.as_of}`,
+  );
+  for (const team of ['home', 'away']) {
+    $(team + '-competition').replaceChildren(...competitions.map(([code, name]) => option(code, name)));
+    $(team + '-competition').onchange = () => {
+      $(team + '-search').value = '';
+      populateYears(team);
+    };
+    $(team + '-year').onchange = () => populateTeams(team);
+    $(team + '-search').oninput = () => populateTeams(team);
+    $(team + '-team').onchange = () => {
+      updateHistory(team);
+      updateReady();
+    };
+  }
+  document
+    .querySelectorAll('[data-preset]')
+    .forEach(button => (button.onclick = () => preset(button.dataset.preset)));
+  const partial = catalog.coverage.filter(c => c.complete === false);
+  text(
+    'coverage-summary',
+    `${catalog.teams.length.toLocaleString()} team editions from ${catalog.coverage.length} competition editions and ${catalog.coverage.reduce((n, c) => n + c.matches, 0).toLocaleString()} results. Snapshot cutoff: ${catalog.as_of}. ${partial.length} editions have incomplete source results; their available teams remain selectable and are marked in the builder. International result scores can include extra time, so those strengths are approximate 90-minute rates.`,
+  );
+  for (const c of catalog.coverage) {
+    const row = document.createElement('tr');
+    for (const value of [
+      c.label,
+      c.season,
+      c.teams,
+      `${c.matches}${c.expected_matches ? ' / ' + c.expected_matches : ''}`,
+      c.complete === true ? 'Complete' : c.complete === false ? 'Partial' : 'Unverified',
+    ]) {
+      const td = document.createElement('td');
+      td.textContent = value;
+      row.append(td);
+    }
+    $('coverage-table').append(row);
+  }
+  const params = new URLSearchParams(location.search);
+  for (const side of ['home', 'away']) {
+    const formation = params.get(side + '_formation'),
+      tactic = params.get(side + '_tactic');
+    if (Object.hasOwn(FORMATIONS, formation)) $(side + '-formation').value = formation;
+    if (Object.hasOwn(TACTICS, tactic)) $(side + '-tactic').value = tactic;
+    $(side + '-tactic').onchange = updateReady;
+    $(side + '-formation').onchange = async () => {
+      const edition = selected(side);
+      if (edition) await squadController.resetFormation(side, edition);
+    };
+  }
+  if (bootView && document.querySelector(`.nav[data-view="${CSS.escape(bootView)}"]`)) changeView(bootView);
+  const home = catalog.teams.find(t => t.id === params.get('home')),
+    away = catalog.teams.find(t => t.id === params.get('away'));
+  if (home && away) {
+    chooseEdition('home', home);
+    chooseEdition('away', away);
+    $('seed').value = params.get('seed') ?? 202316;
+    $('venue').value = ['home', 'neutral'].includes(params.get('venue')) ? params.get('venue') : 'neutral';
+    await runMatch();
+  } else await preset('rivals');
+  $('seed').addEventListener('input', updateReady);
+  $('venue').addEventListener('change', updateReady);
+  $('toggle-builder').onclick = () => {
+    const open = $('fixture-builder').hidden;
+    $('fixture-builder').hidden = !open;
+    $('toggle-builder').setAttribute('aria-expanded', String(open));
+    text('toggle-builder', open ? 'Hide setup −' : 'Edit fixture ＋');
+  };
+  $('random-fixture').onclick = async () => {
+    const picks = crypto.getRandomValues(new Uint32Array(2));
+    const home = catalog.teams[picks[0] % catalog.teams.length];
+    let away = catalog.teams[picks[1] % catalog.teams.length];
+    if (away.id === home.id) away = catalog.teams[(picks[1] + 1) % catalog.teams.length];
+    chooseEdition('home', home);
+    chooseEdition('away', away);
+    await runMatch();
+    lab.notify('New cross-era fixture selected.');
+  };
+  $('swap-sides').onclick = async () => {
+    try {
+      const home = selected('home'),
+        away = selected('away');
+      if (!home || !away) return;
+      const [hxi, axi] = await Promise.all([
+        squadController.configuration('home', home),
+        squadController.configuration('away', away),
+      ]);
+      for (const suffix of ['formation', 'tactic']) {
+        const h = $('home-' + suffix).value;
+        $('home-' + suffix).value = $('away-' + suffix).value;
+        $('away-' + suffix).value = h;
+      }
+      chooseEdition('home', away);
+      chooseEdition('away', home);
+      await Promise.all([
+        squadController.setSelection(
+          'home',
+          away,
+          axi.map(p => p.id),
+        ),
+        squadController.setSelection(
+          'away',
+          home,
+          hxi.map(p => p.id),
+        ),
+      ]);
+      await runMatch();
+      lab.notify('Sides, XIs and game plans swapped.');
+    } catch (e) {
+      lab.notify(e.message);
+    }
+  };
+  for (const [id, direction] of [
+    ['previous-chance', -1],
+    ['next-chance', 1],
+  ])
+    $(id).onclick = () => {
+      if (!match) return;
+      const shots = match.events.filter(e => e.type === 'shot');
+      const shot =
+        direction > 0
+          ? shots.find(e => e.minute > minute + 0.0001)
+          : shots
+              .slice()
+              .reverse()
+              .find(e => e.minute < minute - 0.0001);
+      if (shot) seek(shot.minute);
+      else lab.notify(direction > 0 ? 'No further chances.' : 'No earlier chances.');
+    };
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input,select,textarea,button,a,summary') || e.ctrlKey || e.metaKey || e.altKey)
+      return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      $('play').click();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      seek(minute + (e.key === 'ArrowRight' ? 5 : -5));
+    }
+  });
+  requestAnimationFrame(frame);
+} catch (error) {
+  text('catalog-status', error.message);
+  text('phase', 'Simulator unavailable');
+  $('play').disabled = true;
+  text('builder-error', error.message);
+  $('builder-error').hidden = false;
+}

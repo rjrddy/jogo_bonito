@@ -1,43 +1,401 @@
-import {scoreMatrix,runBatch,playerLines,compareTeams} from './lab-engine.js';
-import {TACTICS} from './simulator.js';
-import {positionGroup} from './squads.js';
-const $=id=>document.getElementById(id);
-const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;};
-const pct=n=>(n*100).toFixed(1)+'%';
-export function createLab({getMatch,getMinute,seek,changeView}){
- let toastTimer,lastRecorded='',currentView='overview';
- function notify(message){clearTimeout(toastTimer);$('lab-status').textContent=message;$('lab-status').hidden=false;toastTimer=setTimeout(()=>$('lab-status').hidden=true,5000);}
- function read(key){try{const data=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(data)?data.filter(r=>r&&typeof r.url==='string'&&r.url.startsWith('?')&&typeof r.title==='string').slice(0,20):[];}catch{return [];}}
- function write(key,rows){try{localStorage.setItem(key,JSON.stringify(rows));return true;}catch{notify('Browser storage is unavailable. Use a share link or JSON export instead.');return false;}}
- function download(filename,data,type='application/json'){const url=URL.createObjectURL(new Blob([data],{type}));const a=el('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
- function preview(side,edition){const image=$(side+'-preview-crest');$(side+'-preview-name').textContent=edition?.name||'No team selected';$(side+'-preview-era').textContent=edition?edition.season+' / '+edition.competition_name:'';image.hidden=!edition?.crest;if(edition?.crest){image.src=edition.crest;image.alt=edition.name+(edition.kind==='national'?' flag':' crest');image.classList.toggle('national-flag',edition.kind==='national');image.onerror=()=>image.hidden=true;}}
- function showView(view){currentView=view;for(const id of ['lineups','forecast','report','scout','notebook'])$(id+'-view').hidden=id!==view;if(view==='report')renderReport();if(view==='notebook')renderNotebook();}
- function buildFormation(side,match){
-  const board=$(side+'-lineup-board');board.replaceChildren();const formation=match.formations[side];const xi=match.lineups[side]||[];const used=new Set();const rows=[];
-  const take=(group,n)=>{const preferred=xi.filter(p=>positionGroup(p)===group&&!used.has(p.id));const fallback=xi.filter(p=>positionGroup(p)!=='G'&&!used.has(p.id)&&!preferred.some(q=>q.id===p.id));const list=[...preferred,...fallback].slice(0,n);list.forEach(p=>used.add(p.id));return list;};
-  rows.push(take('G',1));const counts=formation.split('-').map(Number);counts.forEach((n,i)=>rows.push(take(i===0?'D':i===counts.length-1?'F':'M',n)));
-  for(const row of rows.reverse()){const line=el('div','formation-line');for(const p of row){const token=el('div','formation-player');token.title=p.name+' · '+p.position;token.append(el('span','shirt',p.number||'•'),el('span','formation-name',p.name));line.append(token);}board.append(line);}
-  const edit=el('button','outline','Edit this XI ↗');edit.onclick=()=>{changeView('overview');$('fixture-builder').hidden=false;$('toggle-builder').setAttribute('aria-expanded','true');$('toggle-builder').textContent='Hide setup −';const details=$(side+'-squad').closest('details');details.open=true;details.scrollIntoView({block:'center'});$(side+'-squad').querySelector('input[type=checkbox]')?.focus({preventScroll:true});};board.parentElement.querySelector('.edit-lineup')?.remove();edit.classList.add('edit-lineup');board.after(edit);
-  $(side+'-board-title').textContent=match[side]+' '+match[side+'_edition'].year;$(side+'-board-coach').textContent=match.coaches[side].map(c=>c.name).join(' / ');$(side+'-board-formation').textContent=formation+' / '+TACTICS[match.tactics[side]].name;
- }
- function comparison(match){const root=$('team-comparison');root.replaceChildren();const labels=el('div','comparison-labels');labels.append(el('span','',match.home+' '+match.home_edition.year),el('span','',match.away+' '+match.away_edition.year));root.append(labels);for(const r of compareTeams(match.home_edition,match.away_edition)){const row=el('div','comparison-row');row.append(el('strong','',r.home.toFixed(r.unit?0:2)+(r.unit||'')),el('span','',r.label),el('strong','',r.away.toFixed(r.unit?0:2)+(r.unit||'')));root.append(row);}root.append(el('p','lab-footnote',`Sample sizes: ${match.home_edition.played} and ${match.away_edition.played} historical matches. ↓ Lower is better. Era and competition quality are not calibrated.`));}
- function forecast(match){const grid=$('score-matrix');grid.replaceChildren();grid.append(el('span','matrix-corner','H / A'));for(let a=0;a<7;a++)grid.append(el('span','matrix-label',a===6?'6+':a));const matrix=scoreMatrix(match.rates),max=Math.max(...matrix.flat());matrix.forEach((row,h)=>{grid.append(el('span','matrix-label',h===6?'6+':h));row.forEach((p,a)=>{const cell=el('div','matrix-cell',pct(p));cell.dataset.team=h>a?'home':a>h?'away':'draw';cell.style.setProperty('--heat',p/max);cell.title=`Home ${h===6?'6+':h} · Away ${a===6?'6+':a}: ${pct(p)}`;grid.append(cell);});});
-  let key=$('matrix-key');if(!key){key=el('div','matrix-key');key.id='matrix-key';grid.after(key);}key.replaceChildren();for(const [side,label] of [['home',match.home+' win'],['draw','Draw / 6+ each'],['away',match.away+' win']]){const item=el('span');item.dataset.team=side;item.append(el('i'),document.createTextNode(label));key.append(item);}const extras=$('forecast-extras');extras.replaceChildren();const btts=(1-Math.exp(-match.rates.home))*(1-Math.exp(-match.rates.away)),total=match.rates.home+match.rates.away,over=1-Math.exp(-total)*(1+total+total*total/2);for(const [name,value] of [['Both teams score',btts],['Over 2.5 goals',over]]){const item=el('div');item.append(el('span','',name),el('strong','',pct(value)));extras.append(item);} $('batch-results').replaceChildren(el('p','empty-state','Run an experiment to see win frequencies, average goals and common scores.'));}
- function renderReport(){const match=getMatch();if(!match)return;const minute=getMinute();$('report-minute').textContent=`Generated player statistics through ${Math.floor(minute)}′. Seeking updates this report.`;
-  const q=$('player-search').value.toLocaleLowerCase().trim(),team=$('player-team').value,sort=$('player-sort').value;
-  let rows=playerLines(match,minute).filter(r=>(team==='all'||r.team===team)&&r.name.toLocaleLowerCase().includes(q));
-  if(sort==='name')rows.sort((a,b)=>a.name.localeCompare(b.name));if(sort==='passes')rows.sort((a,b)=>b.completed-a.completed);if(sort==='shots')rows.sort((a,b)=>b.shots-a.shots);
-  const root=$('player-ledger');root.replaceChildren();for(const r of rows){const tr=el('tr');tr.dataset.team=r.team;for(const value of [r.name,r.team==='home'?'H':'A',r.goals,r.shots,r.xg.toFixed(2),r.passes,r.passes?Math.round(r.completed/r.passes*100)+'%':'—'])tr.append(el('td','',value));root.append(tr);}if(!rows.length){const td=el('td','','No players match this filter.');td.colSpan=7;const tr=el('tr');tr.append(td);root.append(tr);}
-  const moments=$('key-moments');moments.replaceChildren();const shots=match.events.filter(e=>e.type==='shot'&&e.minute<=minute).slice().reverse();for(const shot of shots){const b=el('button','moment'+(shot.outcome==='goal'?' goal-moment':''));b.dataset.team=shot.team;b.append(el('span','moment-minute',Math.floor(shot.minute)+'′'),el('span','moment-outcome',shot.outcome==='goal'?'GOAL':shot.outcome.toUpperCase()),el('strong','',shot.player),el('small','',match[shot.team]+' · '+shot.xg.toFixed(2)+' xG'));b.onclick=()=>seek(shot.minute);moments.append(b);}if(!shots.length)moments.append(el('p','empty-state','No shots yet. Play the match or jump to the next chance.'));}
- function card(record,remove){const article=el('article','saved-card');article.append(el('span','tiny-tag',record.model||'FIXTURE'),el('h4','',record.title),el('p','',record.detail||''));const controls=el('div');const link=el('a','outline','Open fixture ↗');link.href=record.url;controls.append(link);if(remove){const b=el('button','delete-fixture','Remove');b.onclick=remove;controls.append(b);}article.append(controls);return article;}
- function renderNotebook(){const saved=read('jogo.saved.v1'),recent=read('jogo.recent.v1');const root=$('saved-fixtures');root.replaceChildren();saved.forEach((r,i)=>root.append(card(r,()=>{const fresh=read('jogo.saved.v1');fresh.splice(i,1);write('jogo.saved.v1',fresh);renderNotebook();})));if(!saved.length)root.append(el('p','empty-state','No saved fixtures. Name the current matchup above and keep it here.'));const results=$('recent-results');results.replaceChildren();recent.forEach(r=>results.append(card(r)));if(!recent.length)results.append(el('p','empty-state','Complete a match to start your results notebook.'));}
- function recordResult(match,minute){if(minute<90)return;const url=location.search;if(lastRecorded===url)return;lastRecorded=url;const goals=side=>match.events.filter(e=>e.team===side&&e.outcome==='goal').length;const record={url,title:`${match.home} ${goals('home')}–${goals('away')} ${match.away}`,detail:`${match.home_edition.year} vs ${match.away_edition.year} · Seed ${match.seed}`,model:match.model};const current=read('jogo.recent.v1');write('jogo.recent.v1',[record,...current.filter(r=>r.url!==url)].slice(0,10));}
- function matchStarted(match){lastRecorded='';for(const side of ['home','away'])buildFormation(side,match);comparison(match);forecast(match);if(currentView==='report')renderReport();}
- function tick(match,minute){recordResult(match,minute);if(currentView==='report')renderReport();}
- $('run-batch').onclick=()=>{const match=getMatch();if(!match)return;const result=runBatch(match.rates,Number($('batch-count').value),match.seed);const root=$('batch-results');root.replaceChildren();const head=el('p','batch-note',result.count.toLocaleString()+' scorelines · seed '+result.seed);root.append(head);const stats=el('div','batch-stats');for(const [name,value] of [['Home wins',pct(result.wins[0]/result.count)],['Draws',pct(result.wins[1]/result.count)],['Away wins',pct(result.wins[2]/result.count)],['Average goals',result.homeGoals.toFixed(2)+' – '+result.awayGoals.toFixed(2)]]){const cell=el('div');cell.dataset.team=name==='Home wins'?'home':name==='Away wins'?'away':'draw';cell.append(el('span','',name),el('strong','',value));stats.append(cell);}root.append(stats);root.append(el('h4','common-heading','MOST COMMON SCORELINES'));for(const [score,n] of result.scores){const row=el('div','score-frequency');const [h,a]=score.split('–').map(Number);row.dataset.team=h>a?'home':a>h?'away':'draw';row.append(el('span','',score));const bar=el('b');bar.style.width=(n/result.count*100)+'%';const track=el('span','frequency-track');track.append(bar);row.append(track,el('span','',pct(n/result.count)));root.append(row);}notify('Experiment complete. These are model samples, not measured forecast accuracy.');};
- for(const id of ['player-search','player-team','player-sort'])$(id).addEventListener(id==='player-search'?'input':'change',renderReport);
- $('save-fixture').onclick=()=>{const match=getMatch();if(!match)return;const title=$('fixture-name').value.trim()||`${match.home} ${match.home_edition.year} × ${match.away} ${match.away_edition.year}`;const record={url:location.search,title,detail:`${match.venue==='home'?'Home advantage':'Neutral ground'} · Seed ${match.seed}`,model:match.model};const rows=read('jogo.saved.v1');if(write('jogo.saved.v1',[record,...rows.filter(r=>r.url!==record.url)].slice(0,20))){notify('Fixture saved to this browser.');renderNotebook();}};
- $('share-scenario').onclick=async()=>{if(!getMatch())return;try{await navigator.clipboard.writeText(location.href);notify('Matchup link copied, including the XIs, tactics and seed.');}catch{notify('Copy this page’s address to share the complete matchup.');}};
- $('export-json').onclick=()=>{const match=getMatch();if(!match)return;download(`jogo-bonito-${match.seed}.json`,JSON.stringify({exported_at:new Date().toISOString(),replay_minute:getMinute(),scenario:location.href,match},null,2));notify('Full simulation and configuration exported as JSON.');};
- return {notify,preview,showView,matchStarted,tick,renderReport};
+import { scoreMatrix, runBatch, playerLines, compareTeams } from './lab-engine.js';
+import { TACTICS } from './simulator.js';
+import { positionGroup } from './squads.js';
+import { $, el } from './dom.js';
+const pct = n => (n * 100).toFixed(1) + '%';
+export function createLab({ getMatch, getMinute, seek, changeView }) {
+  let toastTimer,
+    lastRecorded = '',
+    currentView = 'overview';
+  function notify(message) {
+    clearTimeout(toastTimer);
+    $('lab-status').textContent = message;
+    $('lab-status').hidden = false;
+    toastTimer = setTimeout(() => ($('lab-status').hidden = true), 5000);
+  }
+  function read(key) {
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(data)
+        ? data
+            .filter(
+              r => r && typeof r.url === 'string' && r.url.startsWith('?') && typeof r.title === 'string',
+            )
+            .slice(0, 20)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  function write(key, rows) {
+    try {
+      localStorage.setItem(key, JSON.stringify(rows));
+      return true;
+    } catch {
+      notify('Browser storage is unavailable. Use a share link or JSON export instead.');
+      return false;
+    }
+  }
+  function download(filename, data, type = 'application/json') {
+    const url = URL.createObjectURL(new Blob([data], { type }));
+    const a = el('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function preview(side, edition) {
+    const image = $(side + '-preview-crest');
+    $(side + '-preview-name').textContent = edition?.name || 'No team selected';
+    $(side + '-preview-era').textContent = edition ? edition.season + ' / ' + edition.competition_name : '';
+    image.hidden = !edition?.crest;
+    if (edition?.crest) {
+      image.src = edition.crest;
+      image.alt = edition.name + (edition.kind === 'national' ? ' flag' : ' crest');
+      image.classList.toggle('national-flag', edition.kind === 'national');
+      image.onerror = () => (image.hidden = true);
+    }
+  }
+  function showView(view) {
+    currentView = view;
+    for (const id of ['lineups', 'forecast', 'report', 'scout', 'notebook'])
+      $(id + '-view').hidden = id !== view;
+    if (view === 'report') renderReport();
+    if (view === 'notebook') renderNotebook();
+  }
+  function buildFormation(side, match) {
+    const board = $(side + '-lineup-board');
+    board.replaceChildren();
+    const formation = match.formations[side];
+    const xi = match.lineups[side] || [];
+    const used = new Set();
+    const rows = [];
+    const take = (group, n) => {
+      const preferred = xi.filter(p => positionGroup(p) === group && !used.has(p.id));
+      const fallback = xi.filter(
+        p => positionGroup(p) !== 'G' && !used.has(p.id) && !preferred.some(q => q.id === p.id),
+      );
+      const list = [...preferred, ...fallback].slice(0, n);
+      list.forEach(p => used.add(p.id));
+      return list;
+    };
+    rows.push(take('G', 1));
+    const counts = formation.split('-').map(Number);
+    counts.forEach((n, i) => rows.push(take(i === 0 ? 'D' : i === counts.length - 1 ? 'F' : 'M', n)));
+    for (const row of rows.reverse()) {
+      const line = el('div', 'formation-line');
+      for (const p of row) {
+        const token = el('div', 'formation-player');
+        token.title = p.name + ' · ' + p.position;
+        token.append(el('span', 'shirt', p.number || '•'), el('span', 'formation-name', p.name));
+        line.append(token);
+      }
+      board.append(line);
+    }
+    const edit = el('button', 'outline', 'Edit this XI ↗');
+    edit.onclick = () => {
+      changeView('overview');
+      $('fixture-builder').hidden = false;
+      $('toggle-builder').setAttribute('aria-expanded', 'true');
+      $('toggle-builder').textContent = 'Hide setup −';
+      const details = $(side + '-squad').closest('details');
+      details.open = true;
+      details.scrollIntoView({ block: 'center' });
+      $(side + '-squad')
+        .querySelector('input[type=checkbox]')
+        ?.focus({ preventScroll: true });
+    };
+    board.parentElement.querySelector('.edit-lineup')?.remove();
+    edit.classList.add('edit-lineup');
+    board.after(edit);
+    $(side + '-board-title').textContent = match[side] + ' ' + match[side + '_edition'].year;
+    $(side + '-board-coach').textContent = match.coaches[side].map(c => c.name).join(' / ');
+    $(side + '-board-formation').textContent = formation + ' / ' + TACTICS[match.tactics[side]].name;
+  }
+  function comparison(match) {
+    const root = $('team-comparison');
+    root.replaceChildren();
+    const labels = el('div', 'comparison-labels');
+    labels.append(
+      el('span', '', match.home + ' ' + match.home_edition.year),
+      el('span', '', match.away + ' ' + match.away_edition.year),
+    );
+    root.append(labels);
+    for (const r of compareTeams(match.home_edition, match.away_edition)) {
+      const row = el('div', 'comparison-row');
+      row.append(
+        el('strong', '', r.home.toFixed(r.unit ? 0 : 2) + (r.unit || '')),
+        el('span', '', r.label),
+        el('strong', '', r.away.toFixed(r.unit ? 0 : 2) + (r.unit || '')),
+      );
+      root.append(row);
+    }
+    root.append(
+      el(
+        'p',
+        'lab-footnote',
+        `Sample sizes: ${match.home_edition.played} and ${match.away_edition.played} historical matches. ↓ Lower is better. Era and competition quality are not calibrated.`,
+      ),
+    );
+  }
+  function forecast(match) {
+    const grid = $('score-matrix');
+    grid.replaceChildren();
+    grid.append(el('span', 'matrix-corner', 'H / A'));
+    for (let a = 0; a < 7; a++) grid.append(el('span', 'matrix-label', a === 6 ? '6+' : a));
+    const matrix = scoreMatrix(match.rates),
+      max = Math.max(...matrix.flat());
+    matrix.forEach((row, h) => {
+      grid.append(el('span', 'matrix-label', h === 6 ? '6+' : h));
+      row.forEach((p, a) => {
+        const cell = el('div', 'matrix-cell', pct(p));
+        cell.dataset.team = h > a ? 'home' : a > h ? 'away' : 'draw';
+        cell.style.setProperty('--heat', p / max);
+        cell.title = `Home ${h === 6 ? '6+' : h} · Away ${a === 6 ? '6+' : a}: ${pct(p)}`;
+        grid.append(cell);
+      });
+    });
+    let key = $('matrix-key');
+    if (!key) {
+      key = el('div', 'matrix-key');
+      key.id = 'matrix-key';
+      grid.after(key);
+    }
+    key.replaceChildren();
+    for (const [side, label] of [
+      ['home', match.home + ' win'],
+      ['draw', 'Draw / 6+ each'],
+      ['away', match.away + ' win'],
+    ]) {
+      const item = el('span');
+      item.dataset.team = side;
+      item.append(el('i'), document.createTextNode(label));
+      key.append(item);
+    }
+    const extras = $('forecast-extras');
+    extras.replaceChildren();
+    const btts = (1 - Math.exp(-match.rates.home)) * (1 - Math.exp(-match.rates.away)),
+      total = match.rates.home + match.rates.away,
+      over = 1 - Math.exp(-total) * (1 + total + (total * total) / 2);
+    for (const [name, value] of [
+      ['Both teams score', btts],
+      ['Over 2.5 goals', over],
+    ]) {
+      const item = el('div');
+      item.append(el('span', '', name), el('strong', '', pct(value)));
+      extras.append(item);
+    }
+    $('batch-results').replaceChildren(
+      el('p', 'empty-state', 'Run an experiment to see win frequencies, average goals and common scores.'),
+    );
+  }
+  function renderReport() {
+    const match = getMatch();
+    if (!match) return;
+    const minute = getMinute();
+    $('report-minute').textContent =
+      `Generated player statistics through ${Math.floor(minute)}′. Seeking updates this report.`;
+    const q = $('player-search').value.toLocaleLowerCase().trim(),
+      team = $('player-team').value,
+      sort = $('player-sort').value;
+    const rows = playerLines(match, minute).filter(
+      r => (team === 'all' || r.team === team) && r.name.toLocaleLowerCase().includes(q),
+    );
+    if (sort === 'name') rows.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'passes') rows.sort((a, b) => b.completed - a.completed);
+    if (sort === 'shots') rows.sort((a, b) => b.shots - a.shots);
+    const root = $('player-ledger');
+    root.replaceChildren();
+    for (const r of rows) {
+      const tr = el('tr');
+      tr.dataset.team = r.team;
+      for (const value of [
+        r.name,
+        r.team === 'home' ? 'H' : 'A',
+        r.goals,
+        r.shots,
+        r.xg.toFixed(2),
+        r.passes,
+        r.passes ? Math.round((r.completed / r.passes) * 100) + '%' : '—',
+      ])
+        tr.append(el('td', '', value));
+      root.append(tr);
+    }
+    if (!rows.length) {
+      const td = el('td', '', 'No players match this filter.');
+      td.colSpan = 7;
+      const tr = el('tr');
+      tr.append(td);
+      root.append(tr);
+    }
+    const moments = $('key-moments');
+    moments.replaceChildren();
+    const shots = match.events
+      .filter(e => e.type === 'shot' && e.minute <= minute)
+      .slice()
+      .reverse();
+    for (const shot of shots) {
+      const b = el('button', 'moment' + (shot.outcome === 'goal' ? ' goal-moment' : ''));
+      b.dataset.team = shot.team;
+      b.append(
+        el('span', 'moment-minute', Math.floor(shot.minute) + '′'),
+        el('span', 'moment-outcome', shot.outcome === 'goal' ? 'GOAL' : shot.outcome.toUpperCase()),
+        el('strong', '', shot.player),
+        el('small', '', match[shot.team] + ' · ' + shot.xg.toFixed(2) + ' xG'),
+      );
+      b.onclick = () => seek(shot.minute);
+      moments.append(b);
+    }
+    if (!shots.length)
+      moments.append(el('p', 'empty-state', 'No shots yet. Play the match or jump to the next chance.'));
+  }
+  function card(record, remove) {
+    const article = el('article', 'saved-card');
+    article.append(
+      el('span', 'tiny-tag', record.model || 'FIXTURE'),
+      el('h4', '', record.title),
+      el('p', '', record.detail || ''),
+    );
+    const controls = el('div');
+    const link = el('a', 'outline', 'Open fixture ↗');
+    link.href = record.url;
+    controls.append(link);
+    if (remove) {
+      const b = el('button', 'delete-fixture', 'Remove');
+      b.onclick = remove;
+      controls.append(b);
+    }
+    article.append(controls);
+    return article;
+  }
+  function renderNotebook() {
+    const saved = read('jogo.saved.v1'),
+      recent = read('jogo.recent.v1');
+    const root = $('saved-fixtures');
+    root.replaceChildren();
+    saved.forEach((r, i) =>
+      root.append(
+        card(r, () => {
+          const fresh = read('jogo.saved.v1');
+          fresh.splice(i, 1);
+          write('jogo.saved.v1', fresh);
+          renderNotebook();
+        }),
+      ),
+    );
+    if (!saved.length)
+      root.append(
+        el('p', 'empty-state', 'No saved fixtures. Name the current matchup above and keep it here.'),
+      );
+    const results = $('recent-results');
+    results.replaceChildren();
+    recent.forEach(r => results.append(card(r)));
+    if (!recent.length)
+      results.append(el('p', 'empty-state', 'Complete a match to start your results notebook.'));
+  }
+  function recordResult(match, minute) {
+    if (minute < 90) return;
+    const url = location.search;
+    if (lastRecorded === url) return;
+    lastRecorded = url;
+    const goals = side => match.events.filter(e => e.team === side && e.outcome === 'goal').length;
+    const record = {
+      url,
+      title: `${match.home} ${goals('home')}–${goals('away')} ${match.away}`,
+      detail: `${match.home_edition.year} vs ${match.away_edition.year} · Seed ${match.seed}`,
+      model: match.model,
+    };
+    const current = read('jogo.recent.v1');
+    write('jogo.recent.v1', [record, ...current.filter(r => r.url !== url)].slice(0, 10));
+  }
+  function matchStarted(match) {
+    lastRecorded = '';
+    for (const side of ['home', 'away']) buildFormation(side, match);
+    comparison(match);
+    forecast(match);
+    if (currentView === 'report') renderReport();
+  }
+  function tick(match, minute) {
+    recordResult(match, minute);
+    if (currentView === 'report') renderReport();
+  }
+  $('run-batch').onclick = () => {
+    const match = getMatch();
+    if (!match) return;
+    const result = runBatch(match.rates, Number($('batch-count').value), match.seed);
+    const root = $('batch-results');
+    root.replaceChildren();
+    const head = el('p', 'batch-note', result.count.toLocaleString() + ' scorelines · seed ' + result.seed);
+    root.append(head);
+    const stats = el('div', 'batch-stats');
+    for (const [name, value] of [
+      ['Home wins', pct(result.wins[0] / result.count)],
+      ['Draws', pct(result.wins[1] / result.count)],
+      ['Away wins', pct(result.wins[2] / result.count)],
+      ['Average goals', result.homeGoals.toFixed(2) + ' – ' + result.awayGoals.toFixed(2)],
+    ]) {
+      const cell = el('div');
+      cell.dataset.team = name === 'Home wins' ? 'home' : name === 'Away wins' ? 'away' : 'draw';
+      cell.append(el('span', '', name), el('strong', '', value));
+      stats.append(cell);
+    }
+    root.append(stats);
+    root.append(el('h4', 'common-heading', 'MOST COMMON SCORELINES'));
+    for (const [score, n] of result.scores) {
+      const row = el('div', 'score-frequency');
+      const [h, a] = score.split('–').map(Number);
+      row.dataset.team = h > a ? 'home' : a > h ? 'away' : 'draw';
+      row.append(el('span', '', score));
+      const bar = el('b');
+      bar.style.width = (n / result.count) * 100 + '%';
+      const track = el('span', 'frequency-track');
+      track.append(bar);
+      row.append(track, el('span', '', pct(n / result.count)));
+      root.append(row);
+    }
+    notify('Experiment complete. These are model samples, not measured forecast accuracy.');
+  };
+  for (const id of ['player-search', 'player-team', 'player-sort'])
+    $(id).addEventListener(id === 'player-search' ? 'input' : 'change', renderReport);
+  $('save-fixture').onclick = () => {
+    const match = getMatch();
+    if (!match) return;
+    const title =
+      $('fixture-name').value.trim() ||
+      `${match.home} ${match.home_edition.year} × ${match.away} ${match.away_edition.year}`;
+    const record = {
+      url: location.search,
+      title,
+      detail: `${match.venue === 'home' ? 'Home advantage' : 'Neutral ground'} · Seed ${match.seed}`,
+      model: match.model,
+    };
+    const rows = read('jogo.saved.v1');
+    if (write('jogo.saved.v1', [record, ...rows.filter(r => r.url !== record.url)].slice(0, 20))) {
+      notify('Fixture saved to this browser.');
+      renderNotebook();
+    }
+  };
+  $('share-scenario').onclick = async () => {
+    if (!getMatch()) return;
+    try {
+      await navigator.clipboard.writeText(location.href);
+      notify('Matchup link copied, including the XIs, tactics and seed.');
+    } catch {
+      notify('Copy this page’s address to share the complete matchup.');
+    }
+  };
+  $('export-json').onclick = () => {
+    const match = getMatch();
+    if (!match) return;
+    download(
+      `jogo-bonito-${match.seed}.json`,
+      JSON.stringify(
+        { exported_at: new Date().toISOString(), replay_minute: getMinute(), scenario: location.href, match },
+        null,
+        2,
+      ),
+    );
+    notify('Full simulation and configuration exported as JSON.');
+  };
+  return { notify, preview, showView, matchStarted, tick, renderReport };
 }

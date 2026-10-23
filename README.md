@@ -15,7 +15,10 @@ Requires Python 3.10+. No dependencies, API keys or paid feeds.
 ```sh
 python3 server.py        # http://127.0.0.1:8000
 npm test                 # Python and JavaScript suites
+npm run lint             # eslint + ruff
 ```
+
+Linting needs `npm install` and `ruff` (`pip install ruff`, or a virtualenv).
 
 `dist/` is a static site: serve it over HTTP and everything works, including the models.
 

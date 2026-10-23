@@ -8,279 +8,426 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const html=fs.readFileSync('dist/index.html','utf8');
+const html = fs.readFileSync('dist/index.html', 'utf8');
 
 // ---- Parse the ids the markup actually declares, with select/input defaults.
-const declared=new Map();
-for(const match of html.matchAll(/<(\w+)([^>]*\sid="([^"]+)"[^>]*)>/g)){
- const [,tag,attributes,id]=match;
- const entry={tag:tag.toLowerCase(),value:''};
- const value=/\svalue="([^"]*)"/.exec(attributes);
- if(value)entry.value=value[1];
- if(entry.tag==='select'){
-  const body=html.slice(match.index,html.indexOf('</select>',match.index));
-  const options=[...body.matchAll(/<option([^>]*)>/g)].map(o=>o[1]);
-  const chosen=options.find(o=>/\sselected/.test(o))||options[0]||'';
-  const optionValue=/\svalue="([^"]*)"/.exec(chosen);
-  entry.value=optionValue?optionValue[1]:'';
-  entry.options=options.length;
- }
- declared.set(id,entry);
-}
-assert.ok(declared.has('scout-view'),'index.html must declare the scout view');
-
-const missing=[];
-class Element{
- constructor(tag='div'){
-  this.tagName=tag.toUpperCase();this.children=[];this.attributes={};this.dataset={};
-  this.style={setProperty(){},};this._text='';this.value='';this.hidden=false;this.className='';
-  this.classList={
-   list:new Set(),
-   add:(...names)=>names.forEach(n=>this.classList.list.add(n)),
-   remove:(...names)=>names.forEach(n=>this.classList.list.delete(n)),
-   toggle:(name,force)=>{const on=force===undefined?!this.classList.list.has(name):force;
-    on?this.classList.list.add(name):this.classList.list.delete(name);return on;},
-   contains:name=>this.classList.list.has(name),
-  };
- }
- get textContent(){return this._text||this.children.map(c=>c.textContent??'').join('');}
- set textContent(value){this._text=String(value);this.children=[];}
- append(...nodes){for(const node of nodes){if(node&&typeof node==='object')node.parentNode=this;this.children.push(node);}}
- appendChild(node){this.append(node);return node;}
- replaceChildren(...nodes){this.children=[];this._text='';this.append(...nodes);}
- replaceWith(){}
- setAttribute(name,value){this.attributes[name]=String(value);}
- getAttribute(name){return this.attributes[name];}
- addEventListener(type,handler){this['on'+type]=handler;}
- removeEventListener(){}
- scrollIntoView(){}
- focus(){}
- closest(selector){
-  let node=this;
-  const name=selector.replace(/^\./,'');
-  while(node){if(node.classList?.contains(name))return node;node=node.parentNode;}
-  return new Element('div');
- }
- querySelectorAll(){return [];}
- querySelector(){return null;}
- get firstChild(){return this.children[0]||null;}
-}
-const registry=new Map();
-// Read the modes out of the markup so a new tab cannot be left untested.
-const declaredModes=[...html.matchAll(/class="scout-mode[^"]*"[^>]*data-mode="(\w+)"/g)].map(m=>m[1]);
-assert.ok(declaredModes.length>=3,'index.html must declare the scout modes');
-const modeButtons=declaredModes.map(mode=>{
- const button=new Element('button');button.dataset.mode=mode;return button;
-});
-globalThis.document={
- createElement:tag=>new Element(tag),
- getElementById:id=>{
-  if(!registry.has(id)){
-   if(!declared.has(id)){missing.push(id);}
-   const entry=declared.get(id)||{tag:'div',value:''};
-   const element=new Element(entry.tag);
-   element.value=entry.value;
-   registry.set(id,element);
+const declared = new Map();
+for (const match of html.matchAll(/<(\w+)([^>]*\sid="([^"]+)"[^>]*)>/g)) {
+  const [, tag, attributes, id] = match;
+  const entry = { tag: tag.toLowerCase(), value: '' };
+  const value = /\svalue="([^"]*)"/.exec(attributes);
+  if (value) entry.value = value[1];
+  if (entry.tag === 'select') {
+    const body = html.slice(match.index, html.indexOf('</select>', match.index));
+    const options = [...body.matchAll(/<option([^>]*)>/g)].map(o => o[1]);
+    const chosen = options.find(o => /\sselected/.test(o)) || options[0] || '';
+    const optionValue = /\svalue="([^"]*)"/.exec(chosen);
+    entry.value = optionValue ? optionValue[1] : '';
+    entry.options = options.length;
   }
-  return registry.get(id);
- },
- querySelectorAll:selector=>selector==='.scout-mode'?modeButtons:[],
+  declared.set(id, entry);
+}
+assert.ok(declared.has('scout-view'), 'index.html must declare the scout view');
+
+const missing = [];
+class Element {
+  constructor(tag = 'div') {
+    this.tagName = tag.toUpperCase();
+    this.children = [];
+    this.attributes = {};
+    this.dataset = {};
+    this.style = { setProperty() {} };
+    this._text = '';
+    this.value = '';
+    this.hidden = false;
+    this.className = '';
+    this.classList = {
+      list: new Set(),
+      add: (...names) => names.forEach(n => this.classList.list.add(n)),
+      remove: (...names) => names.forEach(n => this.classList.list.delete(n)),
+      toggle: (name, force) => {
+        const on = force === undefined ? !this.classList.list.has(name) : force;
+        on ? this.classList.list.add(name) : this.classList.list.delete(name);
+        return on;
+      },
+      contains: name => this.classList.list.has(name),
+    };
+  }
+  get textContent() {
+    return this._text || this.children.map(c => c.textContent ?? '').join('');
+  }
+  set textContent(value) {
+    this._text = String(value);
+    this.children = [];
+  }
+  append(...nodes) {
+    for (const node of nodes) {
+      if (node && typeof node === 'object') node.parentNode = this;
+      this.children.push(node);
+    }
+  }
+  appendChild(node) {
+    this.append(node);
+    return node;
+  }
+  replaceChildren(...nodes) {
+    this.children = [];
+    this._text = '';
+    this.append(...nodes);
+  }
+  replaceWith() {}
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  getAttribute(name) {
+    return this.attributes[name];
+  }
+  addEventListener(type, handler) {
+    this['on' + type] = handler;
+  }
+  removeEventListener() {}
+  scrollIntoView() {}
+  focus() {}
+  closest(selector) {
+    let node = this;
+    const name = selector.replace(/^\./, '');
+    while (node) {
+      if (node.classList?.contains(name)) return node;
+      node = node.parentNode;
+    }
+    return new Element('div');
+  }
+  querySelectorAll() {
+    return [];
+  }
+  querySelector() {
+    return null;
+  }
+  get firstChild() {
+    return this.children[0] || null;
+  }
+}
+const registry = new Map();
+// Read the modes out of the markup so a new tab cannot be left untested.
+const declaredModes = [...html.matchAll(/class="scout-mode[^"]*"[^>]*data-mode="(\w+)"/g)].map(m => m[1]);
+assert.ok(declaredModes.length >= 3, 'index.html must declare the scout modes');
+const modeButtons = declaredModes.map(mode => {
+  const button = new Element('button');
+  button.dataset.mode = mode;
+  return button;
+});
+globalThis.document = {
+  createElement: tag => new Element(tag),
+  getElementById: id => {
+    if (!registry.has(id)) {
+      if (!declared.has(id)) {
+        missing.push(id);
+      }
+      const entry = declared.get(id) || { tag: 'div', value: '' };
+      const element = new Element(entry.tag);
+      element.value = entry.value;
+      registry.set(id, element);
+    }
+    return registry.get(id);
+  },
+  querySelectorAll: selector => (selector === '.scout-mode' ? modeButtons : []),
 };
-const store=new Map();
-globalThis.localStorage={
- getItem:key=>store.has(key)?store.get(key):null,
- setItem:(key,value)=>store.set(key,String(value)),
- removeItem:key=>store.delete(key),
+const store = new Map();
+globalThis.localStorage = {
+  getItem: key => (store.has(key) ? store.get(key) : null),
+  setItem: (key, value) => store.set(key, String(value)),
+  removeItem: key => store.delete(key),
 };
-globalThis.fetch=async url=>{
- const file=path.join('dist',String(url).replace(/^\.\//,''));
- if(!fs.existsSync(file))return {ok:false,status:404,json:async()=>({})};
- return {ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(file,'utf8'))};
+globalThis.fetch = async url => {
+  const file = path.join('dist', String(url).replace(/^\.\//, ''));
+  if (!fs.existsSync(file)) return { ok: false, status: 404, json: async () => ({}) };
+  return { ok: true, status: 200, json: async () => JSON.parse(fs.readFileSync(file, 'utf8')) };
 };
 
-const {createScout}=await import('../dist/scout.js');
-const notices=[],opened=[];
-const scout=createScout({notify:message=>notices.push(message),openInMatchroom:id=>opened.push(id)});
+const { createScout } = await import('../dist/scout.js');
+const notices = [],
+  opened = [];
+const scout = createScout({
+  notify: message => notices.push(message),
+  openInMatchroom: id => opened.push(id),
+});
 
 // ---- 1. Opening the view loads the models and fills the board.
 await scout.show();
-const $=id=>document.getElementById(id);
-assert.deepEqual(missing,[],'scout.js reached for ids that index.html does not declare: '+missing.join(', '));
-assert.equal($('scout-loading').hidden,true,'the loading note must be hidden once the models arrive');
-assert.equal($('scout-board').hidden,false);
-assert.ok($('scout-list').children.length>0,'the prospect board must render cards');
-const prospectFile=JSON.parse(fs.readFileSync('dist/scouting/prospects.json','utf8'));
-const clubFile=JSON.parse(fs.readFileSync('dist/scouting/clubs.json','utf8'));
-const clubYear=Object.fromEntries(clubFile.clubs.map(c=>[c.id,c.year]));
-const editionAt=i=>prospectFile.editions[i];
-const yearIndex=prospectFile.fields.indexOf('edition');
-const currentRows=prospectFile.rows.filter(r=>clubYear[editionAt(r[yearIndex])]===prospectFile.current_year);
-const outcomeIndex=prospectFile.fields.indexOf('outcome');
+const $ = id => document.getElementById(id);
+assert.deepEqual(
+  missing,
+  [],
+  'scout.js reached for ids that index.html does not declare: ' + missing.join(', '),
+);
+assert.equal($('scout-loading').hidden, true, 'the loading note must be hidden once the models arrive');
+assert.equal($('scout-board').hidden, false);
+assert.ok($('scout-list').children.length > 0, 'the prospect board must render cards');
+const prospectFile = JSON.parse(fs.readFileSync('dist/scouting/prospects.json', 'utf8'));
+const clubFile = JSON.parse(fs.readFileSync('dist/scouting/clubs.json', 'utf8'));
+const clubYear = Object.fromEntries(clubFile.clubs.map(c => [c.id, c.year]));
+const editionAt = i => prospectFile.editions[i];
+const yearIndex = prospectFile.fields.indexOf('edition');
+const currentRows = prospectFile.rows.filter(
+  r => clubYear[editionAt(r[yearIndex])] === prospectFile.current_year,
+);
+const outcomeIndex = prospectFile.fields.indexOf('outcome');
 
 // Scouting is forward-looking by default: the newest squads, not the archive.
-assert.equal($('scout-year').value,'current','the board must open on the current squads');
-assert.match($('scout-pool-count').textContent,/players in the \d{4}\/\d{2} squads, aged as of today · \d+ nationalities/);
-assert.ok(currentRows.length>0&&currentRows.every(r=>r[outcomeIndex]===null),
- 'current-season prospects must have no recorded outcome; their window runs past the cutoff');
-assert.equal(Number($('scout-current-count').textContent.replace(/,/g,'')),currentRows.length);
-assert.ok(Number($('scout-nations').textContent)>60,'the headline counts the current crop, not the archive');
-assert.ok($('scout-region').children.length>=6,'every confederation should be filterable');
+assert.equal($('scout-year').value, 'current', 'the board must open on the current squads');
+assert.match(
+  $('scout-pool-count').textContent,
+  /players in the \d{4}\/\d{2} squads, aged as of today · \d+ nationalities/,
+);
+assert.ok(
+  currentRows.length > 0 && currentRows.every(r => r[outcomeIndex] === null),
+  'current-season prospects must have no recorded outcome; their window runs past the cutoff',
+);
+assert.equal(Number($('scout-current-count').textContent.replace(/,/g, '')), currentRows.length);
+assert.ok(
+  Number($('scout-nations').textContent) > 60,
+  'the headline counts the current crop, not the archive',
+);
+assert.ok($('scout-region').children.length >= 6, 'every confederation should be filterable');
 // The shim only tracks appended nodes; the three scope options come from the markup.
-const seasonGroup=$('scout-year').children.find(c=>c.tagName==='OPTGROUP');
-assert.ok(seasonGroup&&seasonGroup.children.length>10,'every season must stay individually selectable');
-assert.ok(seasonGroup.children.some(o=>/current/.test(o.textContent)),'the newest season must be marked current');
-const modelFile=JSON.parse(fs.readFileSync('dist/scouting/model.json','utf8'));
-console.log(`Board: opens on ${currentRows.length} current ${prospectFile.current_year-1}/${String(prospectFile.current_year).slice(2)} prospects, ${new Set(Object.values(modelFile.regions)).size} confederations.`);
+const seasonGroup = $('scout-year').children.find(c => c.tagName === 'OPTGROUP');
+assert.ok(seasonGroup && seasonGroup.children.length > 10, 'every season must stay individually selectable');
+assert.ok(
+  seasonGroup.children.some(o => /current/.test(o.textContent)),
+  'the newest season must be marked current',
+);
+const modelFile = JSON.parse(fs.readFileSync('dist/scouting/model.json', 'utf8'));
+console.log(
+  `Board: opens on ${currentRows.length} current ${prospectFile.current_year - 1}/${String(prospectFile.current_year).slice(2)} prospects, ${new Set(Object.values(modelFile.regions)).size} confederations.`,
+);
 
 // ---- 1b. Scope switches between scouting and the recorded track record.
-$('scout-year').value='tracked';$('scout-year').onchange();
-const trackedCount=$('scout-pool-count').textContent;
-assert.match(trackedCount,/whose outcome is recorded/);
-$('scout-year').value='all';$('scout-year').onchange();
-assert.match($('scout-pool-count').textContent,/across every season/);
-const allCount=Number($('scout-pool-count').textContent.replace(/,/g,'').match(/^(\d+)/)[1]);
-assert.equal(allCount,prospectFile.rows.length,'every-season scope must cover the whole pool');
-$('scout-year').value='current';$('scout-year').onchange();
-const currentCount=Number($('scout-pool-count').textContent.replace(/,/g,'').match(/^(\d+)/)[1]);
-assert.equal(currentCount,currentRows.length);
-assert.ok(currentCount<allCount,'the current crop must be a strict subset of the archive');
-console.log(`Scope: ${currentCount} current prospects, ${allCount} across every season, ${trackedCount.match(/^[\d,]+/)[0]} with a recorded outcome.`);
+$('scout-year').value = 'tracked';
+$('scout-year').onchange();
+const trackedCount = $('scout-pool-count').textContent;
+assert.match(trackedCount, /whose outcome is recorded/);
+$('scout-year').value = 'all';
+$('scout-year').onchange();
+assert.match($('scout-pool-count').textContent, /across every season/);
+const allCount = Number(
+  $('scout-pool-count')
+    .textContent.replace(/,/g, '')
+    .match(/^(\d+)/)[1],
+);
+assert.equal(allCount, prospectFile.rows.length, 'every-season scope must cover the whole pool');
+$('scout-year').value = 'current';
+$('scout-year').onchange();
+const currentCount = Number(
+  $('scout-pool-count')
+    .textContent.replace(/,/g, '')
+    .match(/^(\d+)/)[1],
+);
+assert.equal(currentCount, currentRows.length);
+assert.ok(currentCount < allCount, 'the current crop must be a strict subset of the archive');
+console.log(
+  `Scope: ${currentCount} current prospects, ${allCount} across every season, ${trackedCount.match(/^[\d,]+/)[0]} with a recorded outcome.`,
+);
 
 // ---- 2. Filters narrow the pool and selecting a prospect renders a full report.
-$('scout-position').value='F';
-$('scout-age').value='18';
+$('scout-position').value = 'F';
+$('scout-age').value = '18';
 $('scout-position').onchange();
-const narrowed=$('scout-pool-count').textContent;
-assert.notEqual(narrowed,'','filtering must update the count');
-$('scout-position').value='all';$('scout-age').value='21';$('scout-position').onchange();
+const narrowed = $('scout-pool-count').textContent;
+assert.notEqual(narrowed, '', 'filtering must update the count');
+$('scout-position').value = 'all';
+$('scout-age').value = '21';
+$('scout-position').onchange();
 
-const firstCard=$('scout-list').children.find(child=>typeof child.onclick==='function');
-assert.ok(firstCard,'cards must be clickable');
+const firstCard = $('scout-list').children.find(child => typeof child.onclick === 'function');
+assert.ok(firstCard, 'cards must be clickable');
 firstCard.onclick();
-const report=$('scout-report');
-const reportText=report.textContent;
-assert.ok(report.children.length>4,'the report must render its blocks');
-for(const fragment of ['Where they are listed next','Where players like this go next',
- 'Players who looked like this, and what happened','Closest archetype'])
- assert.ok(reportText.includes(fragment),`the report is missing "${fragment}"`);
+const report = $('scout-report');
+const reportText = report.textContent;
+assert.ok(report.children.length > 4, 'the report must render its blocks');
+for (const fragment of [
+  'Where they are listed next',
+  'Where players like this go next',
+  'Players who looked like this, and what happened',
+  'Closest archetype',
+])
+  assert.ok(reportText.includes(fragment), `the report is missing "${fragment}"`);
 // A current prospect has no outcome of its own, so every comparable must carry one.
-const outcomeNames=modelFile.progression.outcomes.map(o=>o.toLowerCase());
-const comparables=[];
-(function collect(node){for(const child of node.children||[]){
- if(typeof child!=='object'||!child)continue;
- if(String(child.className||'').split(/\s+/).includes('compare-card'))comparables.push(child);
- collect(child);}})(report);
-assert.ok(comparables.length>=3,'the report must offer comparables');
-for(const card of comparables)
- assert.ok(outcomeNames.some(name=>card.textContent.toLowerCase().includes(name)),
-  'every comparable to an unresolved prospect must show a recorded outcome: '+card.textContent);
+const outcomeNames = modelFile.progression.outcomes.map(o => o.toLowerCase());
+const comparables = [];
+(function collect(node) {
+  for (const child of node.children || []) {
+    if (typeof child !== 'object' || !child) continue;
+    if (
+      String(child.className || '')
+        .split(/\s+/)
+        .includes('compare-card')
+    )
+      comparables.push(child);
+    collect(child);
+  }
+})(report);
+assert.ok(comparables.length >= 3, 'the report must offer comparables');
+for (const card of comparables)
+  assert.ok(
+    outcomeNames.some(name => card.textContent.toLowerCase().includes(name)),
+    'every comparable to an unresolved prospect must show a recorded outcome: ' + card.textContent,
+  );
 // And the player being scouted is shown at the age they are today.
-assert.match(report.textContent,/\d+ today · \d+ in \d{4}\/\d{2}/,'a current prospect must be aged to today');
+assert.match(
+  report.textContent,
+  /\d+ today · \d+ in \d{4}\/\d{2}/,
+  'a current prospect must be aged to today',
+);
 console.log(`Comparables: ${comparables.length} past players, every one with a recorded outcome.`);
-assert.ok(reportText.includes(modelFile.progression.outcomes[0]),'the censoring class must be named in the report');
-assert.ok(/fit share/.test(reportText),'fit rows must be rendered');
+assert.ok(
+  reportText.includes(modelFile.progression.outcomes[0]),
+  'the censoring class must be named in the report',
+);
+assert.ok(/fit share/.test(reportText), 'fit rows must be rendered');
 console.log('Report: identity, projection, club fits, archetype and comparables all rendered.');
 
 // ---- 3. The fit rows hand club editions back to the Matchroom.
-const findButtons=node=>node.children.flatMap(child=>
- child instanceof Element?[...(typeof child.onclick==='function'?[child]:[]),...findButtons(child)]:[]);
-const buttons=findButtons(report);
-const matchroom=buttons.find(button=>button.textContent.includes('Matchroom'));
-assert.ok(matchroom,'a fit row must offer a Matchroom handoff');
+const findButtons = node =>
+  node.children.flatMap(child =>
+    child instanceof Element
+      ? [...(typeof child.onclick === 'function' ? [child] : []), ...findButtons(child)]
+      : [],
+  );
+const buttons = findButtons(report);
+const matchroom = buttons.find(button => button.textContent.includes('Matchroom'));
+assert.ok(matchroom, 'a fit row must offer a Matchroom handoff');
 matchroom.onclick();
-assert.equal(opened.length,1,'the Matchroom handoff must fire');
-assert.match(opened[0],/^(en|es|de|it|fr)-\d{4}-/,'the handoff must pass a club edition id');
+assert.equal(opened.length, 1, 'the Matchroom handoff must fire');
+assert.match(opened[0], /^(en|es|de|it|fr)-\d{4}-/, 'the handoff must pass a club edition id');
 
 // ---- 4. The watchlist round-trips through storage.
-const watch=buttons.find(button=>button.textContent.includes('watchlist'));
-assert.ok(watch,'the report must offer a watchlist action');
+const watch = buttons.find(button => button.textContent.includes('watchlist'));
+assert.ok(watch, 'the report must offer a watchlist action');
 watch.onclick();
-assert.ok(store.has('jogo.scout.v1'),'the watchlist must persist');
-assert.equal(JSON.parse(store.get('jogo.scout.v1')).length,1);
-assert.ok(notices.some(n=>/watchlist/i.test(n)),'saving must be acknowledged');
+assert.ok(store.has('jogo.scout.v1'), 'the watchlist must persist');
+assert.equal(JSON.parse(store.get('jogo.scout.v1')).length, 1);
+assert.ok(
+  notices.some(n => /watchlist/i.test(n)),
+  'saving must be acknowledged',
+);
 console.log(`Handoff and watchlist: ${opened[0]} sent to the Matchroom, one prospect stored locally.`);
 
 // ---- 5. The custom prospect form scores a player the snapshot has never seen.
 scout.show();
-for(const button of modeButtons)if(button.dataset.mode==='custom')button.onclick();
-assert.equal($('scout-custom').hidden,false);
-assert.ok($('cp-club').children.length>0,'the club-edition picker must be populated');
-assert.ok($('cp-nations').children.length>100,'the nationality list must come from the data');
-$('cp-name').value='Academy Prospect';
-$('cp-age').value='17';
-$('cp-position').value='F';
-$('cp-nationality').value='bra';
-$('cp-level').value='band';
+for (const button of modeButtons) if (button.dataset.mode === 'custom') button.onclick();
+assert.equal($('scout-custom').hidden, false);
+assert.ok($('cp-club').children.length > 0, 'the club-edition picker must be populated');
+assert.ok($('cp-nations').children.length > 100, 'the nationality list must come from the data');
+$('cp-name').value = 'Academy Prospect';
+$('cp-age').value = '17';
+$('cp-position').value = 'F';
+$('cp-nationality').value = 'bra';
+$('cp-level').value = 'band';
 $('cp-level').onchange();
-assert.equal($('cp-club-wrap').hidden,true,'a band reference must hide the club picker');
+assert.equal($('cp-club-wrap').hidden, true, 'a band reference must hide the club picker');
 $('cp-run').onclick();
-assert.equal($('cp-error').hidden,true,'a valid prospect must not error: '+$('cp-error').textContent);
-const custom=$('scout-custom-report').textContent;
-assert.ok(custom.includes('Academy Prospect'),'the custom report must name the player');
-assert.ok(custom.includes('Where players like this go next')&&custom.includes('reference club'),'the band reference must be labelled');
+assert.equal($('cp-error').hidden, true, 'a valid prospect must not error: ' + $('cp-error').textContent);
+const custom = $('scout-custom-report').textContent;
+assert.ok(custom.includes('Academy Prospect'), 'the custom report must name the player');
+assert.ok(
+  custom.includes('Where players like this go next') && custom.includes('reference club'),
+  'the band reference must be labelled',
+);
 assert.ok(custom.includes('Where they are listed next'));
 
 // Invalid input is rejected rather than silently scored.
-$('cp-age').value='40';
+$('cp-age').value = '40';
 $('cp-run').onclick();
-assert.equal($('cp-error').hidden,false,'an impossible age must be rejected');
-assert.match($('cp-error').textContent,/age/i);
-$('cp-age').value='17';
-$('cp-nationality').value='BRAZIL';
+assert.equal($('cp-error').hidden, false, 'an impossible age must be rejected');
+assert.match($('cp-error').textContent, /age/i);
+$('cp-age').value = '17';
+$('cp-nationality').value = 'BRAZIL';
 $('cp-run').onclick();
-assert.equal($('cp-error').hidden,false,'a malformed nationality code must be rejected');
-$('cp-nationality').value='';
-$('cp-level').value='club';
+assert.equal($('cp-error').hidden, false, 'a malformed nationality code must be rejected');
+$('cp-nationality').value = '';
+$('cp-level').value = 'club';
 $('cp-level').onchange();
-$('cp-club-search').value='barcelona';
+$('cp-club-search').value = 'barcelona';
 $('cp-club-search').oninput();
-assert.ok($('cp-club').children.length>0,'searching must find club editions');
-$('cp-club').value=$('cp-club').children[0].value;
+assert.ok($('cp-club').children.length > 0, 'searching must find club editions');
+$('cp-club').value = $('cp-club').children[0].value;
 $('cp-run').onclick();
-assert.equal($('cp-error').hidden,true,'a real club reference must score: '+$('cp-error').textContent);
+assert.equal($('cp-error').hidden, true, 'a real club reference must score: ' + $('cp-error').textContent);
 console.log('Custom intake: band and club references both score, bad age and bad nationality both refused.');
 
 // ---- 5b. Recruiting for a club ranks the pool at one fixed destination.
-for(const button of modeButtons)if(button.dataset.mode==='club')button.onclick();
-assert.equal($('scout-club').hidden,false);
-assert.ok($('cn-club').children.length>0,'the club picker must be populated');
-const chosen=clubFile.clubs.find(c=>c.id===$('cn-club').value);
-assert.ok(chosen,'a club edition must be preselected');
-assert.equal(chosen.year,prospectFile.current_year,'it should open on a current squad');
-const clubText=$('cn-report').textContent;
-assert.ok(clubText.includes(chosen.name),'the report must name the club');
-const squadText=$('cn-squad').textContent;
-for(const fragment of ['Squad listed','Mean age','Under-21 share','Goalkeeper','Forward'])
- assert.ok(squadText.includes(fragment),`squad shape is missing "${fragment}"`);
-const ranked=[];
-(function collect(node){for(const child of node.children||[]){
- if(typeof child!=='object'||!child)continue;
- if(String(child.className||'').split(/\s+/).includes('fit-row'))ranked.push(child);
- collect(child);}})($('cn-report'));
-assert.ok(ranked.length>0&&ranked.length<=15,`expected a capped shortlist, got ${ranked.length}`);
+for (const button of modeButtons) if (button.dataset.mode === 'club') button.onclick();
+assert.equal($('scout-club').hidden, false);
+assert.ok($('cn-club').children.length > 0, 'the club picker must be populated');
+const chosen = clubFile.clubs.find(c => c.id === $('cn-club').value);
+assert.ok(chosen, 'a club edition must be preselected');
+assert.equal(chosen.year, prospectFile.current_year, 'it should open on a current squad');
+const clubText = $('cn-report').textContent;
+assert.ok(clubText.includes(chosen.name), 'the report must name the club');
+const squadText = $('cn-squad').textContent;
+for (const fragment of ['Squad listed', 'Mean age', 'Under-21 share', 'Goalkeeper', 'Forward'])
+  assert.ok(squadText.includes(fragment), `squad shape is missing "${fragment}"`);
+const ranked = [];
+(function collect(node) {
+  for (const child of node.children || []) {
+    if (typeof child !== 'object' || !child) continue;
+    if (
+      String(child.className || '')
+        .split(/\s+/)
+        .includes('fit-row')
+    )
+      ranked.push(child);
+    collect(child);
+  }
+})($('cn-report'));
+assert.ok(ranked.length > 0 && ranked.length <= 15, `expected a capped shortlist, got ${ranked.length}`);
 // Nobody already at the club should be offered to it.
-for(const row of ranked)assert.ok(!row.textContent.includes(` ${chosen.name} ${chosen.year} `),
- 'a prospect already at the club must not be recommended to it');
+for (const row of ranked)
+  assert.ok(
+    !row.textContent.includes(` ${chosen.name} ${chosen.year} `),
+    'a prospect already at the club must not be recommended to it',
+  );
 // Narrowing to one position must actually narrow it.
-$('cn-position').value='G';$('cn-position').onchange();
-const keepers=[];
-(function collect(node){for(const child of node.children||[]){
- if(typeof child!=='object'||!child)continue;
- if(String(child.className||'').split(/\s+/).includes('fit-row'))keepers.push(child);
- collect(child);}})($('cn-report'));
-assert.ok(keepers.length>0,'a goalkeeper shortlist must still return players');
-for(const row of keepers)assert.ok(row.textContent.includes('Goalkeeper'),'position filter must hold');
-$('cn-position').value='need';$('cn-position').onchange();
-console.log(`Club recruitment: ${chosen.name} ${chosen.year} squad shape rendered, ${ranked.length} prospects ranked at a fixed destination.`);
+$('cn-position').value = 'G';
+$('cn-position').onchange();
+const keepers = [];
+(function collect(node) {
+  for (const child of node.children || []) {
+    if (typeof child !== 'object' || !child) continue;
+    if (
+      String(child.className || '')
+        .split(/\s+/)
+        .includes('fit-row')
+    )
+      keepers.push(child);
+    collect(child);
+  }
+})($('cn-report'));
+assert.ok(keepers.length > 0, 'a goalkeeper shortlist must still return players');
+for (const row of keepers) assert.ok(row.textContent.includes('Goalkeeper'), 'position filter must hold');
+$('cn-position').value = 'need';
+$('cn-position').onchange();
+console.log(
+  `Club recruitment: ${chosen.name} ${chosen.year} squad shape rendered, ${ranked.length} prospects ranked at a fixed destination.`,
+);
 
 // ---- 6. The model card publishes the held-out numbers, not just the method.
-for(const button of modeButtons)if(button.dataset.mode==='model')button.onclick();
-assert.equal($('scout-model').hidden,false);
-const card=$('scout-model').textContent;
-const model=modelFile;
-for(const fragment of ['How these models were fitted','Club fit','Progression','What this cannot tell you','What the ranker learned',
- 'Most-active clubs','Closest club level','Brier score',String(model.seed)])
- assert.ok(card.includes(fragment),`the model card is missing "${fragment}"`);
-for(const limit of model.limits)assert.ok(card.includes(limit),'every declared limit must be shown');
-assert.ok(card.includes(String(model.fit.metrics.model.median_rank)),'the median rank must be published');
+for (const button of modeButtons) if (button.dataset.mode === 'model') button.onclick();
+assert.equal($('scout-model').hidden, false);
+const card = $('scout-model').textContent;
+const model = modelFile;
+for (const fragment of [
+  'How these models were fitted',
+  'Club fit',
+  'Progression',
+  'What this cannot tell you',
+  'What the ranker learned',
+  'Most-active clubs',
+  'Closest club level',
+  'Brier score',
+  String(model.seed),
+])
+  assert.ok(card.includes(fragment), `the model card is missing "${fragment}"`);
+for (const limit of model.limits) assert.ok(card.includes(limit), 'every declared limit must be shown');
+assert.ok(card.includes(String(model.fit.metrics.model.median_rank)), 'the median rank must be published');
 console.log('Model card: baselines, calibration and every declared limit are published in the interface.');

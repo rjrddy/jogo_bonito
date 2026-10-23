@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [".venv", ".local", "dist", "node_modules"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    # Record construction reads better as dict(name=..., year=...) than a brace literal.
+    "C408",
+    # Lengths are established by construction at every zip() site here.
+    "B905",
+    # Short maths names (l, I) are clearer than long ones in the training loops.
+    "E741",
+    # Closures over loop variables are deliberate in the samplers.
+    "B023",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The scrapers and the legacy demo predate this config and use a dense
+# one-statement-per-clause style throughout. Left as-is rather than reflowed.
+"scripts/import_rosters.py" = ["E501", "E701", "E702"]
+"scripts/build_badges.py" = ["E501", "E701", "E702"]
+"scripts/build_flags.py" = ["E501", "E701", "E702"]
+"scripts/package_rosters.py" = ["E501", "E701", "E702"]
+"generate_data.py" = ["E501"]
+# Long lines here are SQL and record literals that read worse when wrapped.
+"server.py" = ["E501"]
+"tests/test_rosters.py" = ["E501"]
+"tests/test_badges.py" = ["E701", "E702"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["scripts", "tests"]

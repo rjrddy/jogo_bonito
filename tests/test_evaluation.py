@@ -11,8 +11,7 @@ import re
 import unittest
 from pathlib import Path
 
-from scripts.evaluate_model import (PRIOR, fit, heuristic_rates, heuristic_strengths,
-                                    outcome_probabilities, rates, tau)
+from scripts.evaluate_model import PRIOR, fit, heuristic_rates, heuristic_strengths, outcome_probabilities, rates, tau
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -149,12 +148,16 @@ class EngineParityTests(unittest.TestCase):
         cls.catalog_builder = (ROOT / 'scripts/build_catalog.py').read_text()
 
     def test_the_shipped_expected_goals_constants_are_the_ones_scored(self):
-        line = re.search(r'const base\s*=\s*([\d.]+);', self.simulator)
-        self.assertIsNotNone(line, 'could not find the base scoring rate in dist/simulator.js')
-        self.assertEqual(float(line.group(1)), 1.35)
-        self.assertIn("venue==='home'?1.12:1", self.simulator.replace(' ', ''))
-        self.assertIn("venue==='home'?.92:1", self.simulator.replace(' ', ''))
-        self.assertIn('.15,4.5', self.simulator.replace(' ', ''))
+        """Compare the numbers, not how they are spelled: a formatter rewriting
+        .92 as 0.92 must not look like a change to the model."""
+        source = re.sub(r'\s+', '', self.simulator)
+        base = re.search(r'constbase=([\d.]+);', source)
+        self.assertIsNotNone(base, 'could not find the base scoring rate in dist/simulator.js')
+        self.assertEqual(float(base.group(1)), 1.35)
+        venue = [float(v) for v in re.findall(r"venue==='home'\?([\d.]+):1", source)]
+        self.assertEqual(venue, [1.12, 0.92], 'home and away venue factors')
+        bounds = {(float(lo), float(hi)) for lo, hi in re.findall(r',([\d.]+),([\d.]+),?\)', source)}
+        self.assertIn((0.15, 4.5), bounds, 'expected-goal clamp bounds')
 
     def test_the_prior_matches_the_catalog_builder(self):
         self.assertIn(f'prior = {PRIOR}', self.catalog_builder)

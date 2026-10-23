@@ -3,11 +3,23 @@ import math
 import unittest
 from pathlib import Path
 
-from scripts.build_scouting import (FLAG_NAMES, HORIZON, PROSPECT_MAX_AGE, REGIONS, auc, birth_year,
-                                    club_identities, club_profiles, edition_profiles, identity_key,
-                                    level_of, load, prior_offsets, softmax_classifier_train)
-from scripts.scouting_features import (CANDIDATE_FEATURES, CROSS_OFFSET, PLAYER_FEATURES,
-                                       candidate_vector, player_vector)
+from scripts.build_scouting import (
+    FLAG_NAMES,
+    HORIZON,
+    PROSPECT_MAX_AGE,
+    REGIONS,
+    auc,
+    birth_year,
+    club_identities,
+    club_profiles,
+    edition_profiles,
+    identity_key,
+    level_of,
+    load,
+    prior_offsets,
+    softmax_classifier_train,
+)
+from scripts.scouting_features import CANDIDATE_FEATURES, CROSS_OFFSET, PLAYER_FEATURES, candidate_vector, player_vector
 
 ROOT = Path(__file__).resolve().parents[1]
 SCOUTING = ROOT / 'dist/scouting'
@@ -195,7 +207,7 @@ class LeakageTests(unittest.TestCase):
             self.assertEqual(len(keys), 1, names)
         self.assertEqual(len(set(self.identity.values())), 192, 'the badge manifest resolves 192 clubs')
         for key, years in self.by_club.items():
-            self.assertEqual(len(years), len({e for e in years.values()}), key)
+            self.assertEqual(len(years), len(set(years.values())), key)
 
     def test_strengths_come_from_results_not_from_the_squad_file(self):
         sample = self.editions['en-2023-manchester-city']

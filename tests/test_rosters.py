@@ -1,7 +1,8 @@
 import json
 import unittest
 from pathlib import Path
-from scripts.import_rosters import Page, roster, normalized
+
+from scripts.import_rosters import Page, normalized, roster
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,7 +31,7 @@ class RosterTests(unittest.TestCase):
         self.assertEqual(set(manifest['editions']) | set(manifest['missing']), team_ids)
         player_count = 0
         coach_count = 0
-        for tid, entry in manifest['editions'].items():
+        for entry in manifest['editions'].values():
             data = json.loads((ROOT / 'dist' / entry['path']).read_text())
             self.assertTrue(data['source'].startswith('https://www.footballsquads.co.uk/'))
             self.assertEqual(len(data['source_sha256']), 64)

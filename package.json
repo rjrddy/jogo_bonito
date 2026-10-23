@@ -9,6 +9,13 @@
     "data:refresh": "python3 scripts/download_sources.py && python3 scripts/build_catalog.py",
     "data:rosters": "python3 scripts/import_rosters.py && python3 scripts/package_rosters.py",
     "data:scouting": "python3 scripts/build_scouting.py",
-    "data:benchmark": "python3 scripts/evaluate_model.py"
+    "data:benchmark": "python3 scripts/evaluate_model.py",
+    "lint": "eslint . && ruff check .",
+    "format": "prettier --write \"dist/**/*.js\" \"tests/**/*.mjs\" \"dist/styles.css\" \"*.json\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10"
   }
 }

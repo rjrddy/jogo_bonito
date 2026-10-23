@@ -32,11 +32,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 try:
-    from .scouting_features import (CANDIDATE_FEATURES, COMPETITIONS, CROSS_OFFSET,
-                                    PLAYER_FEATURES, candidate_vector, player_vector)
+    from .scouting_features import CANDIDATE_FEATURES, CROSS_OFFSET, PLAYER_FEATURES, candidate_vector, player_vector
 except ImportError:
-    from scouting_features import (CANDIDATE_FEATURES, COMPETITIONS, CROSS_OFFSET,
-                                   PLAYER_FEATURES, candidate_vector, player_vector)
+    from scouting_features import CANDIDATE_FEATURES, CROSS_OFFSET, PLAYER_FEATURES, candidate_vector, player_vector
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'dist/scouting'
@@ -78,9 +76,12 @@ for _confederation, _codes in {
 
 # Nationality code to the country name build_flags.py already bundles an SVG for.
 FLAG_NAMES = dict(zip(
-    'ALB ALG ARG AUS AUT BEL BOL BIH BRA CMR CAN CPV CHI COL CRC CRO CUW CZE COD DEN ECU EGY ENG FIN FRA GEO GER GHA '
-    'GRE HAI HON HUN ISL IRN IRQ ITA CIV JAM JPN JOR MEX MAR NED NZL NGA PRK MKD NIR NOR PAN PAR PER POL POR QAT IRL '
-    'ROU RUS KSA SCO SEN SRB SVK SVN RSA KOR ESP SWE SUI TUN TUR UKR USA URU UZB VEN WAL'.split(),
+    ['ALB', 'ALG', 'ARG', 'AUS', 'AUT', 'BEL', 'BOL', 'BIH', 'BRA', 'CMR', 'CAN', 'CPV', 'CHI', 'COL', 'CRC',
+     'CRO', 'CUW', 'CZE', 'COD', 'DEN', 'ECU', 'EGY', 'ENG', 'FIN', 'FRA', 'GEO', 'GER', 'GHA', 'GRE', 'HAI',
+     'HON', 'HUN', 'ISL', 'IRN', 'IRQ', 'ITA', 'CIV', 'JAM', 'JPN', 'JOR', 'MEX', 'MAR', 'NED', 'NZL', 'NGA',
+     'PRK', 'MKD', 'NIR', 'NOR', 'PAN', 'PAR', 'PER', 'POL', 'POR', 'QAT', 'IRL', 'ROU', 'RUS', 'KSA', 'SCO',
+     'SEN', 'SRB', 'SVK', 'SVN', 'RSA', 'KOR', 'ESP', 'SWE', 'SUI', 'TUN', 'TUR', 'UKR', 'USA', 'URU', 'UZB',
+     'VEN', 'WAL'],
     ['Albania', 'Algeria', 'Argentina', 'Australia', 'Austria', 'Belgium', 'Bolivia', 'Bosnia and Herzegovina',
      'Brazil', 'Cameroon', 'Canada', 'Cape Verde', 'Chile', 'Colombia', 'Costa Rica', 'Croatia', 'Curaçao',
      'Czech Republic', 'DR Congo', 'Denmark', 'Ecuador', 'Egypt', 'England', 'Finland', 'France', 'Georgia', 'Germany',
@@ -497,7 +498,8 @@ def build():
     club_index = {name: i for i, name in enumerate(club_names)}
     latest_year = max(e['year'] for e in editions.values())
     club_records = [r for r in records if r['kind'] == 'club']
-    print(f'{len(records)} player-editions, {len(careers)} identities, {len(clubs)} club editions, {len(club_names)} club identities')
+    print(f'{len(records)} player-editions, {len(careers)} identities, '
+          f'{len(clubs)} club editions, {len(club_names)} club identities')
 
     nation_pool = Counter(r['nationality'] for r in club_records if r['nationality'])
     spec = dict(scale={
@@ -513,7 +515,7 @@ def build():
 
     # Observed club-to-club moves: consecutive club seasons at a different club.
     moves = []
-    for key, timeline in careers.items():
+    for timeline in careers.values():
         seasons = defaultdict(list)
         for record in timeline:
             if record['kind'] == 'club':
@@ -536,11 +538,12 @@ def build():
         if destination['year'] <= FIT_TRAIN_UNTIL:
             corridor_counts[origin['competition'] + '>' + destination['competition']] += 1
     busiest = max(corridor_counts.values()) if corridor_counts else 1
-    spec['corridor'] = {key: round(math.log1p(value) / math.log1p(busiest), 6) for key, value in corridor_counts.items()}
+    spec['corridor'] = {key: round(math.log1p(value) / math.log1p(busiest), 6)
+                        for key, value in corridor_counts.items()}
 
     # ---- Progression: where does a player first seen at 21 or younger end up?
     cohort = []
-    for key, timeline in careers.items():
+    for timeline in careers.values():
         club_seasons = [r for r in timeline if r['kind'] == 'club' and r['edition'] in clubs]
         if not club_seasons:
             continue
@@ -558,7 +561,8 @@ def build():
         cohort.append(dict(record=first, peak=peak, peak_edition=best['edition'] if best else None,
                            labelled=first['year'] + MIN_HORIZON <= latest_year))
     labelled = [c for c in cohort if c['labelled']]
-    observed_peaks = sorted(c['peak'] for c in labelled if c['peak'] is not None and c['record']['year'] <= PROGRESS_TRAIN_UNTIL)
+    observed_peaks = sorted(c['peak'] for c in labelled
+                            if c['peak'] is not None and c['record']['year'] <= PROGRESS_TRAIN_UNTIL)
     cuts = [observed_peaks[len(observed_peaks) // 3], observed_peaks[2 * len(observed_peaks) // 3]]
     # Named for what the data can actually witness. A squad list records who a
     # club registered, not who played, so the only honest reading of this target
@@ -596,7 +600,8 @@ def build():
     accuracy = sum(1 for p, label in predictions if p.index(max(p)) == label) / len(predictions)
     brier = sum(sum((p[k] - (1.0 if k == label else 0.0)) ** 2 for k in range(len(OUTCOMES)))
                 for p, label in predictions) / len(predictions)
-    base_rate = [Counter(label for _, label in progression_rows)[k] / len(progression_rows) for k in range(len(OUTCOMES))]
+    base_rate = [Counter(label for _, label in progression_rows)[k] / len(progression_rows)
+                 for k in range(len(OUTCOMES))]
     base_brier = sum(sum((base_rate[k] - (1.0 if k == label else 0.0)) ** 2 for k in range(len(OUTCOMES)))
                      for _, label in predictions) / len(predictions)
     progression_metrics = dict(
@@ -604,9 +609,10 @@ def build():
         validation=len(progression_validation), validation_from=PROGRESS_CALIBRATE_UNTIL + 1,
         horizon=HORIZON, settle=SETTLE, tier_cuts=[round(c, 4) for c in cuts],
         prior_offsets=[round(o, 4) for o in offsets],
-        uncalibrated_brier=round(sum(sum((p[k] - (1.0 if k == label else 0.0)) ** 2 for k in range(len(OUTCOMES)))
-                                     for p, label in [(class_probabilities(progression, f), l)
-                                                      for f, l in progression_validation]) / len(progression_validation), 4),
+        uncalibrated_brier=round(
+            sum(sum((p[k] - (1.0 if k == label else 0.0)) ** 2 for k in range(len(OUTCOMES)))
+                for p, label in [(class_probabilities(progression, f), l)
+                                 for f, l in progression_validation]) / len(progression_validation), 4),
         accuracy=round(accuracy, 4),
         majority_accuracy=round(sum(1 for _, label in predictions if label == majority) / len(predictions), 4),
         brier=round(brier, 4), base_rate_brier=round(base_brier, 4),
@@ -655,11 +661,11 @@ def build():
         return dot(latent, embed[index]) + club_bias[index] + dot(weights, features)
 
     popularity = Counter()
-    for origin, destination in moves:
+    for _, destination in moves:
         if destination['year'] <= FIT_TRAIN_UNTIL:
             popularity[clubs[destination['edition']]['club']] += 1
     ranks = {'model': [], 'popularity': [], 'level': []}
-    for prospect, origin_profile, player, truth, pool, year in validation:
+    for prospect, origin_profile, player, truth, pool, _ in validation:
         scored = sorted(pool, key=lambda e: -fit_score(prospect, origin_profile, player, e))
         ranks['model'].append(scored.index(truth) + 1)
         ranked = sorted(pool, key=lambda e: (-popularity[clubs[e]['club']], clubs[e]['club']))
@@ -737,13 +743,14 @@ def build():
         mean_age = sum(p['age'] for p, _ in members) / len(members)
         mean_level = sum(c['level'] for _, c in members) / len(members)
         mean_youth = sum(c['youth_rate'] for _, c in members) / len(members)
-        role = {'G': 'goalkeepers', 'D': 'defenders', 'M': 'midfielders', 'F': 'forwards'}[positions.most_common(1)[0][0]]
+        roles = {'G': 'goalkeepers', 'D': 'defenders', 'M': 'midfielders', 'F': 'forwards'}
+        role = roles[positions.most_common(1)[0][0]]
         age_band = 'Teenage' if mean_age < 19.3 else 'Late-teen' if mean_age < 20.3 else 'Age-21'
         label = f'{age_band} {role} at {bands[index]} clubs'
         archetypes.append(dict(index=index, centre=[round(v, 5) for v in centre], members=len(members),
                                label=label, mean_age=round(mean_age, 1), mean_level=round(mean_level, 3),
                                mean_youth_rate=round(mean_youth, 3),
-                               positions={k: v for k, v in positions.most_common()}))
+                               positions=dict(positions.most_common())))
     typical_youth = sum(a['mean_youth_rate'] for a in archetypes) / len(archetypes)
     seen = Counter(a['label'] for a in archetypes)
     for archetype in archetypes:
@@ -785,7 +792,9 @@ def build():
         return profile
 
     served = {record['id']: served_profile(record) for record in serve_clubs}
-    round6 = lambda rows: [[round(v, 6) for v in row] for row in rows]
+    def round6(rows):
+        return [[round(v, 6) for v in row] for row in rows]
+
     tower_out, embed_out = round6(tower), round6(embed)
     bias_out = [round(v, 6) for v in club_bias]
     weights_out = [round(v, 6) for v in weights]
@@ -847,7 +856,7 @@ def build():
                          tier_cuts=[round(c, 6) for c in cuts], metrics=progression_metrics),
         archetypes=archetypes, fixtures=fixtures,
         nations=dict(sorted(nation_pool.items())),
-        source_corrections=[dict(edition=edition, player=name, **{k: v for k, v in fix.items()})
+        source_corrections=[dict(edition=edition, player=name, **dict(fix.items()))
                             for (edition, name), fix in sorted(SOURCE_CORRECTIONS.items())],
         regions={code: REGIONS[code] for code in sorted(nation_pool) if code in REGIONS},
         flags=flag_assets(sorted(nation_pool)),

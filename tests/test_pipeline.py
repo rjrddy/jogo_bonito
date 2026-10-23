@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+
 from generate_data import generate
 from server import EventStore
 

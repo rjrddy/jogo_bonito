@@ -2,6 +2,7 @@ import hashlib
 import json
 import unittest
 from pathlib import Path
+
 from scripts.build_badges import validate_asset
 
 ROOT=Path(__file__).resolve().parents[1]

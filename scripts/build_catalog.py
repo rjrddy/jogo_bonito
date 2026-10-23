@@ -20,10 +20,27 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / '.local/sources'
-LEAGUES = {'en': ('Premier League', 'eng'), 'es': ('La Liga', 'es'), 'de': ('Bundesliga', 'de'), 'it': ('Serie A', 'it'), 'fr': ('Ligue 1', 'fr')}
-TOURNAMENTS = {'FIFA World Cup': ('wc', 'World Cup'), 'UEFA Euro': ('euros', 'Euros'), 'Copa América': ('copa', 'Copa América')}
-ALIASES = {'Manchester City FC': 'Manchester City', 'Real Madrid CF': 'Real Madrid', 'FC Barcelona': 'Barcelona', 'Liverpool FC': 'Liverpool', 'Chelsea FC': 'Chelsea', 'Arsenal FC': 'Arsenal', 'Paris Saint-Germain FC': 'Paris Saint-Germain', 'Paris SG': 'Paris Saint-Germain', 'Bayern München': 'Bayern Munich', 'FC Bayern München': 'Bayern Munich', 'FC Internazionale Milano': 'Inter', 'Internazionale': 'Inter', 'Inter Milan': 'Inter', 'AC Milan': 'Milan', 'Juventus FC': 'Juventus', 'Club Atlético de Madrid': 'Atlético Madrid', 'Atletico Madrid': 'Atlético Madrid'}
-CRESTS = {'Manchester City': 'manchester-city', 'Real Madrid': 'real-madrid', 'Barcelona': 'barcelona', 'Arsenal': 'arsenal', 'Liverpool': 'liverpool', 'Chelsea': 'chelsea'}
+LEAGUES = {
+    'en': ('Premier League', 'eng'), 'es': ('La Liga', 'es'), 'de': ('Bundesliga', 'de'),
+    'it': ('Serie A', 'it'), 'fr': ('Ligue 1', 'fr')
+}
+TOURNAMENTS = {
+    'FIFA World Cup': ('wc', 'World Cup'), 'UEFA Euro': ('euros', 'Euros'),
+    'Copa América': ('copa', 'Copa América')
+}
+ALIASES = {
+    'Manchester City FC': 'Manchester City', 'Real Madrid CF': 'Real Madrid', 'FC Barcelona': 'Barcelona',
+    'Liverpool FC': 'Liverpool', 'Chelsea FC': 'Chelsea', 'Arsenal FC': 'Arsenal',
+    'Paris Saint-Germain FC': 'Paris Saint-Germain', 'Paris SG': 'Paris Saint-Germain',
+    'Bayern München': 'Bayern Munich', 'FC Bayern München': 'Bayern Munich',
+    'FC Internazionale Milano': 'Inter', 'Internazionale': 'Inter', 'Inter Milan': 'Inter',
+    'AC Milan': 'Milan', 'Juventus FC': 'Juventus', 'Club Atlético de Madrid': 'Atlético Madrid',
+    'Atletico Madrid': 'Atlético Madrid'
+}
+CRESTS = {
+    'Manchester City': 'manchester-city', 'Real Madrid': 'real-madrid', 'Barcelona': 'barcelona',
+    'Arsenal': 'arsenal', 'Liverpool': 'liverpool', 'Chelsea': 'chelsea'
+}
 BADGE_MANIFEST = ROOT / 'dist/assets/crests/clubs.json'
 BADGES = json.loads(BADGE_MANIFEST.read_text())['names'] if BADGE_MANIFEST.exists() else {}
 
@@ -55,8 +72,19 @@ def edition(competition, label, year, season, rows, expected=None):
     for name, s in sorted(stats.items()):
         attack = (s['gf'] + prior * mean) / (s['played'] + prior) / mean
         defense = (s['ga'] + prior * mean) / (s['played'] + prior) / mean
-        result.append(dict(id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season, competition=competition, competition_name=label, kind='club' if competition in LEAGUES else 'national', attack=round(attack, 5), defense=round(defense, 5), **s, crest=flag_path(name) if competition not in LEAGUES else BADGES.get(name) or (f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None), last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
-    coverage = dict(competition=competition, label=label, year=year, season=season, teams=len(stats), matches=len(rows), expected_matches=expected, complete=len(rows)==expected if expected else None, last_match=max(r['date'] for r in rows))
+        result.append(dict(
+            id=f'{competition}-{year}-{slug(name)}', name=name, year=year, season=season,
+            competition=competition, competition_name=label,
+            kind='club' if competition in LEAGUES else 'national',
+            attack=round(attack, 5), defense=round(defense, 5), **s,
+            crest=flag_path(name) if competition not in LEAGUES
+            else BADGES.get(name) or (f'assets/crests/{CRESTS[name]}.svg' if name in CRESTS else None),
+            last_match=max(r['date'] for r in rows if name in (r['home'], r['away']))))
+    coverage = dict(
+        competition=competition, label=label, year=year, season=season, teams=len(stats),
+        matches=len(rows), expected_matches=expected,
+        complete=len(rows) == expected if expected else None,
+        last_match=max(r['date'] for r in rows))
     return result, coverage
 
 
@@ -104,7 +132,6 @@ def league_results(as_of='2026-10-18'):
 
 
 def build(as_of='2026-10-18'):
-    cutoff = date.fromisoformat(as_of)
     teams, coverage = [], []
     for code, label, year, season, rows in league_results(as_of):
         count = 18 if code == 'de' or (code == 'fr' and year >= 2024) else 20
@@ -116,24 +143,45 @@ def build(as_of='2026-10-18'):
         if report:
             coverage.append(report)
         else:
-            coverage.append(dict(competition=code, label=label, year=year, season=season, teams=0, matches=0, expected_matches=expected, complete=False, last_match=None))
+            coverage.append(dict(
+                competition=code, label=label, year=year, season=season, teams=0,
+                matches=0, expected_matches=expected, complete=False, last_match=None))
     groups = defaultdict(list)
     for m in csv.DictReader((CACHE / 'international.csv').open()):
-        if m['tournament'] not in TOURNAMENTS or not '2010-01-01' <= m['date'] <= as_of or not m['home_score'] or not m['away_score']:
+        if (m['tournament'] not in TOURNAMENTS or not '2010-01-01' <= m['date'] <= as_of
+                or not m['home_score'] or not m['away_score']):
             continue
-        groups[(m['tournament'], int(m['date'][:4]))].append(dict(date=m['date'], home=clean(m['home_team']), away=clean(m['away_team']), hg=int(m['home_score']), ag=int(m['away_score'])))
+        groups[(m['tournament'], int(m['date'][:4]))].append(dict(
+            date=m['date'], home=clean(m['home_team']), away=clean(m['away_team']),
+            hg=int(m['home_score']), ag=int(m['away_score'])))
     for (tournament, year), rows in sorted(groups.items()):
         code, label = TOURNAMENTS[tournament]
-        counts = {'wc': 104 if year >= 2026 else 64, 'euros': 31 if year < 2016 else 51, 'copa': 32 if year in (2016, 2024) else 26 if year == 2019 else 28 if year == 2021 else 26}
+        counts = {
+            'wc': 104 if year >= 2026 else 64,
+            'euros': 31 if year < 2016 else 51,
+            'copa': 32 if year in (2016, 2024) else 26 if year == 2019 else 28 if year == 2021 else 26,
+        }
         season = '2020 (played 2021)' if code == 'euros' and year == 2021 else str(year)
         batch, report = edition(code, label, year, season, rows, counts[code])
         teams.extend(batch)
         coverage.append(report)
-    hashes = {name: hashlib.sha256((CACHE / name).read_bytes()).hexdigest() for name in ('football.zip', 'france.zip', 'international.csv')}
-    result = dict(version=1, as_of=as_of, club_year_convention='season-ending year', sources=[dict(url='https://github.com/openfootball/football.json', license='CC0-1.0'), dict(url='https://github.com/footballcsv/cache.soccerverse', license='CC0-1.0'), dict(url='https://github.com/martj42/international_results', license='CC0-1.0')], source_sha256=hashes, model='Eight-match-prior, competition-normalized scoring and conceding rates. No calibrated cross-league or club/national adjustment.', coverage=coverage, teams=teams)
+    hashes = {name: hashlib.sha256((CACHE / name).read_bytes()).hexdigest()
+              for name in ('football.zip', 'france.zip', 'international.csv')}
+    result = dict(
+        version=1, as_of=as_of, club_year_convention='season-ending year',
+        sources=[
+            dict(url='https://github.com/openfootball/football.json', license='CC0-1.0'),
+            dict(url='https://github.com/footballcsv/cache.soccerverse', license='CC0-1.0'),
+            dict(url='https://github.com/martj42/international_results', license='CC0-1.0'),
+        ],
+        source_sha256=hashes,
+        model=('Eight-match-prior, competition-normalized scoring and conceding rates. '
+               'No calibrated cross-league or club/national adjustment.'),
+        coverage=coverage, teams=teams)
     out = ROOT / 'dist/catalog.json'
     out.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')))
-    print(f'{len(teams)} team editions, {len(coverage)} competition editions, {sum(c["matches"] for c in coverage)} source results')
+    print(f'{len(teams)} team editions, {len(coverage)} competition editions, '
+          f'{sum(c["matches"] for c in coverage)} source results')
     gaps = [c for c in coverage if c['complete'] is False]
     print('Incomplete editions:', json.dumps(gaps, ensure_ascii=False))
     return result

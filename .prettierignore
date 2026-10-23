@@ -1,0 +1,11 @@
+node_modules
+.venv
+dist/scouting
+dist/catalog.json
+dist/badge-colors.json
+dist/matches.json
+dist/benchmark.json
+dist/rosters
+dist/assets
+docs/screenshots
+dist/index.html

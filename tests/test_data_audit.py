@@ -14,7 +14,7 @@ import unittest
 from collections import defaultdict
 from pathlib import Path
 
-from scripts.build_scouting import SOURCE_CORRECTIONS, birth_year, accent_fold
+from scripts.build_scouting import SOURCE_CORRECTIONS, accent_fold, birth_year
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -147,7 +147,9 @@ class SquadGroundTruthTests(unittest.TestCase):
     def test_namesakes_stay_separate_people(self):
         """Two real Aaron Ramseys exist. Identity is name plus birth year, and
         collapsing them would invent a transfer between them."""
-        norm = lambda n: re.sub(r'[^a-z ]', '', accent_fold(n).lower()).strip()
+        def norm(n):
+            return re.sub(r'[^a-z ]', '', accent_fold(n).lower()).strip()
+
         years = defaultdict(set)
         for squad in self.squads.values():
             for player in squad['players']:
