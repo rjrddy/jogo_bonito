@@ -9,3 +9,8 @@ node_modules/
 # Local screenshot harness, served from dist/ by the dev server
 dist/__shot.html
 .venv/
+
+# Training corpus and GPU environment (see docs/event-model.md)
+.local/events/
+.venv-train/
+checkpoints/

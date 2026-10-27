@@ -28,7 +28,7 @@ Each team edition gets an attack and defence rating from its real goals scored a
 
 The Scout lab adds two supervised models, fitted offline by `scripts/build_scouting.py` and run in the browser from exported weights. A ranker predicts which club a player moves to next, trained on 5,327 observed club-to-club moves. A classifier projects which calibre of squad a player first seen at 21 or younger appears on two to six seasons later. Both are validated on a forward split in time.
 
-Full detail in [docs/methodology.md](docs/methodology.md).
+Full detail in [docs/methodology.md](docs/methodology.md). Notes on replacing the event generator with a trained model are in [docs/event-model.md](docs/event-model.md).
 
 ## Evaluation
 
